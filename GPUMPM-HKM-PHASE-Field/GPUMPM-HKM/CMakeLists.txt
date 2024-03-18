@@ -7,7 +7,7 @@ endif()
 set(CMAKE_CXX_FLAGS "-O3")
 # project meta
 # ============
-set(CMAKE_CUDA_COMPILER "/usr/local/cuda11.8/bin")
+# set(CMAKE_CUDA_COMPILER "/usr/local/cuda11.8/bin")
 project(gpu_ipc LANGUAGES   CXX CUDA)
 
 find_package(CUDAToolkit REQUIRED)
@@ -22,7 +22,7 @@ add_compile_definitions(gipc PRIVATE USE_SNK SVD_DOUBLE ADAPTIVE_KAPPA)
 
 # add_subdirectory(zsgipc)
 #include_directories(mLBVH)
-file(GLOB srcs CONFIGURE_DEPENDS GPU_IPC/mLBVH/*.cu GPU_IPC/mLBVH/*.cpp)
+file(GLOB srcs CONFIGURE_DEPENDS *.cu *.cpp)
 add_executable(gipc ${srcs})
 target_compile_features(gipc PRIVATE cxx_std_17 cuda_std_17)
 target_link_libraries(gipc PRIVATE CUDA::cuda_driver CUDA::cusparse CUDA::cusolver CUDA::cudart)
@@ -42,16 +42,19 @@ find_package(TBB REQUIRED)
 if (MSVC)
     message("win build")
     target_include_directories(gipc PRIVATE 
-        GPU_IPC/mLBVH/GL_LIB/glew_64/include
-        GPU_IPC/mLBVH/GL_LIB/freeglut_64/include
-        GPU_IPC/mLBVH)
+        GL_LIB/glew_64/include
+        GL_LIB/freeglut_64/include
+        partio/include
+        .)
     target_link_directories(gipc PRIVATE 
-        GPU_IPC/mLBVH/GL_LIB/glew_64/libs/release
-        GPU_IPC/mLBVH/GL_LIB/freeglut_64/libs/release
+        GL_LIB/glew_64/libs/release
+        GL_LIB/freeglut_64/libs/release
+        partio/lib
     )
     target_link_libraries(gipc PRIVATE
         glew32.lib
         freeglut.lib
+        partio.lib
     )
 elseif(UNIX)
     find_package(OpenGL REQUIRED)
