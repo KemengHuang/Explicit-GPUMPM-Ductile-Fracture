@@ -1,7 +1,6 @@
 #include <GL\glew.h>
 #include <GL\freeglut.h>
 #include <sstream>
-#include "gl_texture.h"
 #include"glmainHead.h"
 #include<fstream>
 #include"Simulator.h"
@@ -28,7 +27,6 @@ float detaTime = 1000.f;
 float preTime = 0;
 float simuTime = 0;
 float cflTime = 0;
-PNGTexture particle_texture_;
 
 void init_cuda() {
 	cudaError_t cudaStatus = cudaSetDevice(0);
@@ -36,155 +34,6 @@ void init_cuda() {
 		fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
 		exit(0);
 	}
-}
-
-void set_shaders()
-{
-	char* vs = NULL;
-	char* fs = NULL;
-
-	vs = (char*)malloc(sizeof(char) * 10000);
-	fs = (char*)malloc(sizeof(char) * 10000);
-	memset(vs, 0, sizeof(char) * 10000);
-	memset(fs, 0, sizeof(char) * 10000);
-
-	FILE* fp;
-	char c;
-	int count;
-
-	fp = fopen("shader/shader.vs", "r");
-	count = 0;
-	while ((c = fgetc(fp)) != EOF)
-	{
-		vs[count] = c;
-		count++;
-	}
-	fclose(fp);
-
-	fp = fopen("shader/shader.fs", "r");
-	count = 0;
-	while ((c = fgetc(fp)) != EOF)
-	{
-		fs[count] = c;
-		count++;
-	}
-	fclose(fp);
-
-	v = glCreateShader(GL_VERTEX_SHADER);
-	f = glCreateShader(GL_FRAGMENT_SHADER);
-
-	const char* vv;
-	const char* ff;
-	vv = vs;
-	ff = fs;
-
-	glShaderSource(v, 1, &vv, NULL);
-	glShaderSource(f, 1, &ff, NULL);
-
-	int success;
-
-	glCompileShader(v);
-	glGetShaderiv(v, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		char info_log[5000];
-		glGetShaderInfoLog(v, 5000, NULL, info_log);
-		printf("Error in vertex shader compilation!\n");
-		printf("Info Log: %s\n", info_log);
-	}
-
-	glCompileShader(f);
-	glGetShaderiv(f, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		char info_log[5000];
-		glGetShaderInfoLog(f, 5000, NULL, info_log);
-		printf("Error in fragment shader compilation!\n");
-		printf("Info Log: %s\n", info_log);
-	}
-
-	p = glCreateProgram();
-	glAttachShader(p, v);
-	glAttachShader(p, f);
-	glLinkProgram(p);
-	glUseProgram(p);
-
-	free(vs);
-	free(fs);
-}
-
-
-void draw_page(float ox, float oy, float oz, float width, float height, float length)
-{
-	glLineWidth(1.2f);
-	glColor4f(0.8f, 0.8f, 0.8f, 0.8);
-
-	glBegin(GL_LINES);
-
-	for (int i = 1; i < N / 4; i++) {
-		float dy = 4 * i * (width / N);
-		for (int j = 1; j < N / 4; j++) {
-			float dz = 4 * j * (width / N);
-			glVertex3f(ox, oy + dy, oz + dz);
-			glVertex3f(ox + width, oy + dy, oz + dz);
-		}
-	}
-
-	//glVertex3f(ox, oy, oz);
-	//glVertex3f(ox + width, oy, oz);
-
-	for (int i = 1; i < N / 4; i++) {
-		float dx = 4 * i * (width / N);
-		for (int j = 1; j < N / 4; j++) {
-			float dz = 4 * j * (width / N);
-			glVertex3f(ox+ dx, oy, oz + dz);
-			glVertex3f(ox + dx, oy + height, oz + dz);
-		}
-	}
-
-	/*glVertex3f(ox, oy, oz);
-	glVertex3f(ox, oy + height, oz);*/
-
-	for (int i = 1; i < N / 4; i++) {
-		float dx = 4 * i * (width / N);
-		for (int j = 1; j < N / 4; j++) {
-			float dy = 4 * j * (width / N);
-			glVertex3f(ox + dx, oy + dy, oz);
-			glVertex3f(ox + dx, oy + dy, oz + length);
-		}
-	}
-
-	/*glVertex3f(ox, oy, oz);
-	glVertex3f(ox, oy, oz + length);
-
-	glVertex3f(ox + width, oy, oz);
-	glVertex3f(ox + width, oy + height, oz);
-
-	glVertex3f(ox + width, oy + height, oz);
-	glVertex3f(ox, oy + height, oz);
-
-	glVertex3f(ox, oy + height, oz + length);
-	glVertex3f(ox, oy, oz + length);
-
-	glVertex3f(ox, oy + height, oz + length);
-	glVertex3f(ox, oy + height, oz);
-
-	glVertex3f(ox + width, oy, oz);
-	glVertex3f(ox + width, oy, oz + length);
-
-	glVertex3f(ox, oy, oz + length);
-	glVertex3f(ox + width, oy, oz + length);
-
-	glVertex3f(ox + width, oy + height, oz);
-	glVertex3f(ox + width, oy + height, oz + length);
-
-	glVertex3f(ox + width, oy + height, oz + length);
-	glVertex3f(ox + width, oy, oz + length);
-
-	glVertex3f(ox, oy + height, oz + length);
-	glVertex3f(ox + width, oy + height, oz + length);*/
-
-	glEnd();
 }
 
 
@@ -268,7 +117,7 @@ void init()
 	real_world_origin.x = 0; real_world_origin.y = 0; real_world_origin.z = 0;
 	real_world_side.x = 1; real_world_side.y = 1; real_world_side.z = 1;
 	//PNGTexture particle_texture_;
-	particle_texture_.loadPNG("ball32.png");
+	//particle_texture_.loadPNG("ball32.png");
 }
 
 void init_ratio()
@@ -299,12 +148,7 @@ void drawParticles(int step) {
 	glPointParameterfARB(GL_POINT_SIZE_MAX, 32);
 	glPointParameterfARB(GL_POINT_SIZE_MIN, 1.0f);
 
-	// Texture and blending mode
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, particle_texture_.get_texture());
-	glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
 	int nump_ = simulatorMPM.numParticle;
 	if (step == 0) {
@@ -364,7 +208,7 @@ void renderBitmapString(float x, float y, float z, void* font, const std::string
 	}
 }
 int countF = 0;
-std::ofstream outf("frameRate.txt");
+
 void drawInfo(GLdouble w, GLdouble h)
 {
 	float x = 20, y = 20, delta_y = 20;
@@ -378,10 +222,6 @@ void drawInfo(GLdouble w, GLdouble h)
 	glLoadIdentity();
 	glColor3f(1.0f, 1.0f, 1.0f);
 	glDisable(GL_LIGHTING);
-
-
-
-
 
 	ss << "FPS: " << 1000 / detaTime<<std::endl;
 	renderBitmapString(x, y, 0, GLUT_BITMAP_HELVETICA_12, ss);
@@ -398,14 +238,6 @@ void drawInfo(GLdouble w, GLdouble h)
 	ss << "SimulationTime: " << simuTime;
 	renderBitmapString(x, y, 0, GLUT_BITMAP_HELVETICA_12, ss);
 	ss.str(""); y += delta_y;
-
-	if (countF>10&&countF < 6000) {
-		outf << 1000 / detaTime << std::endl;
-	}
-	else if(countF == 6000){
-		outf.close();
-		//exit(0);
-	}
 
 
 	glPopMatrix();
@@ -650,7 +482,7 @@ int main(int argc, char** argv)
 	init();
 	init_mpm_system();
 	init_ratio();
-	//set_shaders();
+	
 	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE_NV);
 	glEnable(GL_POINT_SPRITE_ARB);
 	glTexEnvi(GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE);

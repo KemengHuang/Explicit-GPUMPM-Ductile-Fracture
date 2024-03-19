@@ -30,9 +30,6 @@
     <ClCompile Include="gl_main.cpp">
       <Filter>GL</Filter>
     </ClCompile>
-    <ClCompile Include="lodepng.cpp">
-      <Filter>GL</Filter>
-    </ClCompile>
     <ClCompile Include="SPGridMask.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -51,9 +48,6 @@
     <ClCompile Include="Materials.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="Main.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="LoadSample.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -62,13 +56,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="gl_texture.h">
-      <Filter>GL</Filter>
-    </ClInclude>
     <ClInclude Include="glmainHead.h">
-      <Filter>GL</Filter>
-    </ClInclude>
-    <ClInclude Include="lodepng.h">
       <Filter>GL</Filter>
     </ClInclude>
     <ClInclude Include="SPGridMask.h">
@@ -105,9 +93,6 @@
       <Filter>CUDA</Filter>
     </ClInclude>
     <ClInclude Include="TimeIntegrator.cuh">
-      <Filter>CUDA</Filter>
-    </ClInclude>
-    <ClInclude Include="svd3.cuh">
       <Filter>CUDA</Filter>
     </ClInclude>
     <ClInclude Include="P2GKernal.cuh">

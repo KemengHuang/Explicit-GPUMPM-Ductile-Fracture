@@ -3,7 +3,7 @@
 #include"LoadSample.h"
 #include"cuda_tools.h"
 #include"cuda_kernal_tools.cuh"
-#include "partio.h"
+//#include "partio.h"
 void matrixVectorMultiplication(const T* x, const T* v, vector3T *result)
 {
     result->x = x[0] * v[0] + x[3] * v[1] + x[6] * v[2];
@@ -94,7 +94,7 @@ bool MPMSimulator::build(unsigned int buildtype) {
         tableSize = 36000 * rateSize * rateSize * rateSize * MEMORY_SCALE;
 
         Sample sple;
-        h_pos = sple.readObj("sample/tube_50.obj");//sple.Initialize_Data_cube();
+        h_pos = sple.readObj("sample/tube_100.obj");//sple.Initialize_Data_cube();
         //h_pos = sple.Initialize_Data_cube();
         numParticle = h_pos.size();
         totalVolume = 0.75f * 0.75f * 0.75f;
@@ -272,40 +272,7 @@ void MPMSimulator::simulateStick(float* cflTime, float* preTime, float* simuTime
 	getModelParticlePtr()->Attribs_Back_Host(h_pos, h_vel, h_indices);
 	bool output = false;
 	if (output) {
-		if (_currentFrame % 3 == 0) {
-			printf("END Frame %d\n", _currentFrame);
-			//_currentFrame++;
-			if (dt > 0.f)
-				writePartio("../output/" + std::to_string(_currentFrame / 3) + ".bgeo");
-		}
+
 	}
 }
 
-void MPMSimulator::writePartio(const std::string& filename) {
-    Partio::ParticlesDataMutable* parts = Partio::create();
-    Partio::ParticleAttribute posH = parts->addAttribute("position", Partio::VECTOR, 3);
-    Partio::ParticleAttribute velH = parts->addAttribute("velocity", Partio::VECTOR, 3);
-    Partio::ParticleAttribute indexH = parts->addAttribute("index", Partio::INT, 1);
-    Partio::ParticleAttribute typeH = parts->addAttribute("type", Partio::INT, 1);
-    Partio::ParticleAttribute phaseH = parts->addAttribute("phase", Partio::FLOAT, 1);
-
-    auto& ps = getModelParticlePtr()->_phaseC_trans;
-    for (unsigned int i = 0; i < h_pos.size(); ++i)
-    {
-        int idx = parts->addParticle();
-        T* p = parts->dataWrite<T>(posH, idx);
-        T* v = parts->dataWrite<T>(velH, idx);
-        int* index = parts->dataWrite<int>(indexH, idx);
-        int* type = parts->dataWrite<int>(typeH, idx);
-        T* phase = parts->dataWrite<T>(phaseH, idx);
-
-        p[0] = h_pos[i].x; p[1] = h_pos[i].y; p[2] = h_pos[i].z;
-        v[0] = h_vel[i].x; v[1] = h_vel[i].y; v[2] = h_vel[i].z;
-        index[0] = h_indices[i];
-        type[0] = 1;
-        phase[0] = ps[i];
-    }
-
-    Partio::write(filename.c_str(), *parts);
-    parts->release();
-}

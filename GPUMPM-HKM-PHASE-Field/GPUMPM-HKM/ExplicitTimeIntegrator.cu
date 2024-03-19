@@ -1,11 +1,14 @@
 #include"TimeIntegrator.cuh"
 #include"cuda_tools.h"
 //#include <cuda_runtime.h>
-#include"svd3.cuh"
 #include"P2GKernal.cuh"
 #include"G2PKernal.cuh"
 #include<iostream>
 #include<fstream>
+#include "zsSVD.cuh"
+
+
+
 __global__ void calcIndex(
     const int numCell, const T one_over_dx, const int* d_cell_first_particles_indices,
     const T** d_sorted_positions, int** smallest_nodes) {
@@ -20,13 +23,13 @@ __global__ void computeContributionFixedCorotated(const int numParticle, const T
     int parid = blockDim.x * blockIdx.x + threadIdx.x;
     if (parid >= numParticle) return;
 
-    T F[9];
+    double F[9];
     F[0] = d_F[parid + 0 * numParticle]; F[1] = d_F[parid + 1 * numParticle]; F[2] = d_F[parid + 2 * numParticle];
     F[3] = d_F[parid + 3 * numParticle]; F[4] = d_F[parid + 4 * numParticle]; F[5] = d_F[parid + 5 * numParticle];
     F[6] = d_F[parid + 6 * numParticle]; F[7] = d_F[parid + 7 * numParticle]; F[8] = d_F[parid + 8 * numParticle];
 
-    T U[9]; T S[3]; T V[9];
-    svd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
+    double U[9]; double S[3]; double V[9];
+    msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
 
     //
     T J = S[0] * S[1] * S[2]; T scaled_mu = 2.f * mu; T scaled_lambda = lambda * (J - 1.f);
@@ -53,17 +56,6 @@ __global__ void computePhase_field_vol(const int numParticle, const T* d_F, T vo
     F[6] = d_F[parid + 6 * numParticle]; F[7] = d_F[parid + 7 * numParticle]; F[8] = d_F[parid + 8 * numParticle];
 
     T determinant = F[0] * F[4] * F[8] + F[3] * F[7] * F[2] + F[6] * F[1] * F[5] - F[2] * F[4] * F[6] - F[1] * F[3] * F[8] - F[0] * F[5] * F[7];
-	//particle_vol[parid] = vol0* (determinant);// *1327;
-
-    //if (abs(determinant) > 10) {
-    //    particle_vol[parid] = vol0 * determinant * 10 / abs(determinant);
-    //}
-    //else {
-    //    particle_vol[parid] = vol0 * (determinant);
-    //}
-    //if (isinf(determinant)) {
-    //    particle_vol[parid] = vol0*10;
-    //}
 
     particle_vol[parid] = vol0 * (determinant);
     
@@ -75,29 +67,6 @@ __device__ T R(const T& alpha, const T& yield_stress, const T& harden) {
     return sqrt(2.f / 3.f) * yield_stress - (sqrt(2.f / 3.f) * yield_stress - yield_stress) / exp(harden * alpha);
 }
 
-__device__ T newton(const T x0, const T tau_dev_tr_f, const T tau_tr_trace, const T g, const T alpha, const T yield_stress, const T& harden, const T& mu) {
-    T x1 = x0;
-    T eps = 1e-12;
-    bool run = true;
-    T i = 0;
-    while (run && i < 30000) {
-        T f = tau_dev_tr_f
-            - g * sqrt(2.f / 3.f) * R(alpha + sqrt(2.f / 3.f) * x1, yield_stress, harden)
-            - 2.f / 3.f * g * mu * x1 * tau_tr_trace;
-
-        T f1 = g * sqrt(T(2) / T(3)) * (-R(alpha + sqrt(T(2) / T(3)) * x1, yield_stress, harden) + sqrt(2.f / 3.f) * yield_stress) * (-3.f * sqrt(T(2) / T(3)))
-            - T(2) / T(3) * g * mu * tau_tr_trace;
-
-        T d = f / f1;
-        if (abs(d) <= eps) {
-            run = false;
-            return x1;
-        }
-        x1 = x1 - d;
-        i++;
-    }
-    return x1;
-}
 
 __device__ void Inverse(double* matIn, double* mat) {
 
@@ -166,70 +135,43 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
     T g = p_g[parid];
     T alpha = p_alpha[parid];
 
-    T F[9];
+    double F[9];
     F[0] = d_F[parid + 0 * numParticle]; F[1] = d_F[parid + 1 * numParticle]; F[2] = d_F[parid + 2 * numParticle];
     F[3] = d_F[parid + 3 * numParticle]; F[4] = d_F[parid + 4 * numParticle]; F[5] = d_F[parid + 5 * numParticle];
     F[6] = d_F[parid + 6 * numParticle]; F[7] = d_F[parid + 7 * numParticle]; F[8] = d_F[parid + 8 * numParticle];
 
-    T U[9]; T S[3]; T V[9];
-    svd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
-
-    //T determinant2 = U[0] + U[1] + U[2] + U[3] + U[4] + U[5] + U[6] + U[7] + U[8] +
-    //    V[0] + V[1] + V[2] + V[3] + V[4] + V[5] + V[6] + V[7] + V[8] +
-    //    S[0] + S[1] + S[2];
-
-    //if (isnan(determinant2)) {
-    //    F[0] = 1.f; F[4] = 1.f; F[8] = 1.f;
-    //    F[1] = 0.f; F[2] = 0.f; F[3] = 0.f;
-    //    F[5] = 0.f; F[6] = 0.f; F[7] = 0.f;
-    //    svd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
-    //}
-
-    //T determinant = F[0] * F[4] * F[8] + F[3] * F[7] * F[2] + F[6] * F[1] * F[5] - F[2] * F[4] * F[6] - F[1] * F[3] * F[8] - F[0] * F[5] * F[7];
-    //if (abs(determinant) < 1e-30 || isnan(determinant) || isinf(determinant)) {
-    //    F[0] = 1.f; F[4] = 1.f; F[8] = 1.f;
-    //    F[1] = 0.f; F[2] = 0.f; F[3] = 0.f;
-    //    F[5] = 0.f; F[6] = 0.f; F[7] = 0.f;
-    //    svd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
-    //}
+    double U[9]; double S[3]; double V[9];
+    msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
 
     double C[9];
     C[0] = 2 * mu + lambda; C[1] = lambda;          C[2] = lambda;
     C[3] = lambda;          C[4] = 2 * mu + lambda; C[5] = lambda;
     C[6] = lambda;          C[7] = lambda;          C[8] = 2 * mu + lambda;
 
-
-
     T eps[3];
-    eps[0] = log(S[0]);
-    eps[1] = log(S[1]);
-    eps[2] = log(S[2]);
-
-    //if (abs(S[0]) > 0.f) {
-    //    eps[0] = log(abs(S[0]));
-    //}
-    //else {
-    //    eps[0] = 0;
-    //}
-    //if (abs(S[1]) > 0.f) {
-    //    eps[1] = log(abs(S[1]));
-    //}
-    //else {
-    //    eps[1] = 0;
-    //}
-    //if (abs(S[2]) > 0.f) {
-    //    eps[2] = log(abs(S[2]));
-    //}
-    //else {
-    //    eps[2] = 0;
-    //}
+    if ((S[0]) > 0.f) {
+        eps[0] = log((S[0]));
+    }
+    else {
+        eps[0] = 0;
+    }
+    if ((S[1]) > 0.f) {
+        eps[1] = log((S[1]));
+    }
+    else {
+        eps[1] = 0;
+    }
+    if ((S[2]) > 0.f) {
+        eps[2] = log((S[2]));
+    }
+    else {
+        eps[2] = 0;
+    }
 
     T tau_tr[3];
     tau_tr[0] = C[0] * eps[0] + C[1] * eps[1] + C[2] * eps[2];
     tau_tr[1] = C[3] * eps[0] + C[4] * eps[1] + C[5] * eps[2];
     tau_tr[2] = C[6] * eps[0] + C[7] * eps[1] + C[8] * eps[2];
-
-    //TODO: input some para.
 
     T vefy = tau_tr[0] * tau_tr[0] + tau_tr[1] * tau_tr[1] + tau_tr[2] * tau_tr[2];
     T tau_tr_F;
@@ -243,48 +185,40 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
     tau_dev_tr[1] = g * (tau_tr[1] - divider);
     tau_dev_tr[2] = g * (tau_tr[2] - divider);
 
-    T yield_stress = 1000;
+    T yield_stress = 800;
     T harden = 3.f;
     T parameter1 = 2.f / 3.f;
 
     T y = tau_tr_F - g * R(alpha, yield_stress, harden) * sqrt(parameter1);
 
-    double alpha_c = 1;// (yield_stress / 3.f);
-    if (true&&y >= (T)1e-6)
+    double alpha_c = 1;
+    if (true && y >= (T)1e-6)
     {
-
-
-        //T tau_tr_trace = tau_tr[0] + tau_tr[1] + tau_tr[2];
         T tau_tr_trace = tau_tr[0] + tau_tr[1] + tau_tr[2];
         T dlambda_init = 0.001;
-        //T dlambda = 0.f;
-        T dlambda = newton(dlambda_init, tau_tr_F, tau_tr_trace, g, alpha, yield_stress, harden, mu);
+        T dlambda = 0.f;
 
         if (dlambda < 0) {
             dlambda = 0;
         }
 
-        //if (abs(tau_tr_sum) < 1e-4)
-        //{
-        //    //tau_tr_sum = 0.001f;
-        //    dlambda = 100.f;
-        //}
-        //else
-        //{
-            //T bss = (parameter1 * g * tau_tr_sum);
-            //if (abs(bss) > 0.f) {
-            //dlambda = y / bss;
-            //}
-            /*else {
-                dlambda = 100;
-            }*/
-            //}
+        if (abs(tau_tr_sum) < 1e-4)
+        {
+            dlambda = 100.f;
+        }
+        else
+        {
+            T bss = (parameter1 * g * tau_tr_sum);
+            if (bss > 0.f) {
+                dlambda = y / bss;
+            }
+        }
 
-            //if (dlambda > 100.f)
-            //{
-            //    dlambda = 100.f;
-            //}
-            //printf("dlambda:  %f\n", dlambda);
+        if (dlambda > 100.f)
+        {
+            dlambda = 100.f;
+        }
+
         if (alpha < alpha_c) {
             alpha += sqrt(parameter1) * dlambda;
             p_alpha[parid] = alpha;
@@ -296,16 +230,12 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
         T tau_normal = tau_dev_tr[0] * tau_dev_tr[0] + tau_dev_tr[1] * tau_dev_tr[1] + tau_dev_tr[2] * tau_dev_tr[2];
 
         T tau_dev_tr_norm;
-        //if (tau_normal > 0.f) {
+     
         tau_dev_tr_norm = sqrt(tau_normal);
-        /* }
-         else {
-             tau_dev_tr_norm = 0.01f;
-         }*/
 
         if (abs(tau_dev_tr_norm) < 1e-2)
         {
-            tau_dev_tr_norm = 0.01f;//*tau_dev_tr_norm/abs(tau_dev_tr_norm);
+            tau_dev_tr_norm = 0.01f;
         }
 
         T tau_dev_nn[3];
@@ -330,9 +260,8 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
 
 
         T verify = eps_nn[0] * eps_nn[0] + eps_nn[1] * eps_nn[1] + eps_nn[2] * eps_nn[2];
-        T normS;// = sqrt(eps_nn[0] * eps_nn[0] + eps_nn[1] * eps_nn[1] + eps_nn[2] * eps_nn[2]);
 
-        normS = sqrt(verify);
+        T normS = sqrt(verify);
 
 
         for (int i = 0; i < 3; i++) {
@@ -348,45 +277,19 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
         F[3] = S[0] * U[0] * V[1] + S[1] * U[3] * V[4] + S[2] * U[6] * V[7]; F[4] = S[0] * U[1] * V[1] + S[1] * U[4] * V[4] + S[2] * U[7] * V[7]; F[5] = S[0] * U[2] * V[1] + S[1] * U[5] * V[4] + S[2] * U[8] * V[7];
         F[6] = S[0] * U[0] * V[2] + S[1] * U[3] * V[5] + S[2] * U[6] * V[8]; F[7] = S[0] * U[1] * V[2] + S[1] * U[4] * V[5] + S[2] * U[7] * V[8]; F[8] = S[0] * U[2] * V[2] + S[1] * U[5] * V[5] + S[2] * U[8] * V[8];
 
-
-        //T U2[9]; T S2[3]; T V2[9];
-        //svd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U2[0], U2[3], U2[6], U2[1], U2[4], U2[7], U2[2], U2[5], U2[8], S2[0], S2[1], S2[2], V2[0], V2[3], V2[6], V2[1], V2[4], V2[7], V2[2], V2[5], V2[8]);
-
-        //determinant2 = U2[0] + U2[1] + U2[2] + U2[3] + U2[4] + U2[5] + U2[6] + U2[7] + U2[8] +
-        //    V2[0] + V2[1] + V2[2] + V2[3] + V2[4] + V2[5] + V2[6] + V2[7] + V2[8] +
-        //    S2[0] + S2[1] + S2[2];
-
-        //if (isnan(determinant2)) {
-        //    F[0] = 1.f; F[4] = 1.f; F[8] = 1.f;
-        //    F[1] = 0.f; F[2] = 0.f; F[3] = 0.f;
-        //    F[5] = 0.f; F[6] = 0.f; F[7] = 0.f;
-        //    svd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
-        //}
-
-
-        //determinant = F[0] * F[4] * F[8] + F[3] * F[7] * F[2] + F[6] * F[1] * F[5] - F[2] * F[4] * F[6] - F[1] * F[3] * F[8] - F[0] * F[5] * F[7];
-        //if (abs(determinant) < 1e-30 || isnan(determinant) || isinf(determinant)) {
-        //    F[0] = 1.f; F[4] = 1.f; F[8] = 1.f;
-        //    F[1] = 0.f; F[2] = 0.f; F[3] = 0.f;
-        //    F[5] = 0.f; F[6] = 0.f; F[7] = 0.f;
-        //    svd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
-        //}
-
     }
 
     d_F[parid + 0 * numParticle] = F[0]; d_F[parid + 1 * numParticle] = F[1]; d_F[parid + 2 * numParticle] = F[2];
     d_F[parid + 3 * numParticle] = F[3]; d_F[parid + 4 * numParticle] = F[4]; d_F[parid + 5 * numParticle] = F[5];
     d_F[parid + 6 * numParticle] = F[6]; d_F[parid + 7 * numParticle] = F[7]; d_F[parid + 8 * numParticle] = F[8];
 
-
-    //svd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
     T be_bar[3];
     T J = S[0] * S[1] * S[2];
     T J_bar = pow(J, -parameter1);
 
     be_bar[0] = J_bar * S[0] * S[0]; /**/ be_bar[1] = J_bar * S[1] * S[1]; /**/ be_bar[2] = J_bar * S[2] * S[2];
     T be_bar_sum = be_bar[0] + be_bar[1] + be_bar[2];
-    T ln_J;// = log(abs(J));
+    T ln_J;
 
     if (J > 0.f) {
         ln_J = log((J));
@@ -415,8 +318,7 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
         d_maxPsi[parid] = Psi_pos;
     }
     T G_c_0 = 20.f;
-    //alpha_c = 1;
-    T p = alpha / 2;//__fdividef(alpha, 1.f);
+    T p = alpha / 2;
     T G_C;
     double ps = 0.01;
     if (p < ps)
@@ -428,13 +330,13 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
         double residual_c = 0.1;
         G_C = G_c_0 * (((1.f - residual_c) * exp(ps - p)) + residual_c);
     }
-    G_C = G_c_0;
+
     float theta = 0.001f;
     T L0 = dx * 0.5;
     float beta = 15;
-    //p = 0;
+
     FP[parid] = 4 * L0 * (1 - theta) * d_maxPsi[parid] * (1.f / G_C) + 1.f;
-    // 2. compute tau
+
     T tau_vol[3];
     parameter1 = (kappa * 0.5) * (J * J - 1.f);
     tau_vol[0] = parameter1; tau_vol[1] = parameter1; tau_vol[2] = parameter1;
@@ -471,26 +373,14 @@ __global__ void computeContributionNeoHookean(T dx, T* FP, const int numParticle
     int parid = blockDim.x * blockIdx.x + threadIdx.x;
     if (parid >= numParticle) return;
 
-    T F[9];
+    double F[9];
     F[0] = d_F[parid + 0 * numParticle]; F[1] = d_F[parid + 1 * numParticle]; F[2] = d_F[parid + 2 * numParticle];
     F[3] = d_F[parid + 3 * numParticle]; F[4] = d_F[parid + 4 * numParticle]; F[5] = d_F[parid + 5 * numParticle];
     F[6] = d_F[parid + 6 * numParticle]; F[7] = d_F[parid + 7 * numParticle]; F[8] = d_F[parid + 8 * numParticle];
 
-    T U[9]; T S[3]; T V[9];
+    double U[9]; double S[3]; double V[9];
 
-
-	T determinant = F[0] * F[4] * F[8] + F[3] * F[7] * F[2] + F[6] * F[1] * F[5] - F[2] * F[4] * F[6] - F[1] * F[3] * F[8] - F[0] * F[5] * F[7];
-	if (abs(determinant) < 1e-30) {
-		F[0] = 1.f; F[1] = 0.f; F[2] = 0.f;
-		F[3] = 0.f; F[4] = 1.f; F[5] = 0.f;
-		F[6] = 0.f; F[7] = 0.f; F[8] = 1.f;
-
-        d_F[parid + 0 * numParticle] = F[0]; d_F[parid + 1 * numParticle] = F[1]; d_F[parid + 2 * numParticle] = F[2];
-        d_F[parid + 3 * numParticle] = F[3]; d_F[parid + 4 * numParticle] = F[4]; d_F[parid + 5 * numParticle] = F[5];
-        d_F[parid + 6 * numParticle] = F[6]; d_F[parid + 7 * numParticle] = F[7]; d_F[parid + 8 * numParticle] = F[8];
-	}
-
-    svd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
+    msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
 
     if (S[0] < 0.0001f)S[0] = 0.0001f;
     if (S[1] < 0.0001f)S[1] = 0.0001f;
@@ -503,9 +393,7 @@ __global__ void computeContributionNeoHookean(T dx, T* FP, const int numParticle
 
     be_bar[0] = J_bar * S[0] * S[0]; /**/ be_bar[1] = J_bar * S[1] * S[1]; /**/ be_bar[2] = J_bar * S[2] * S[2];
     T be_bar_sum = be_bar[0] + be_bar[1] + be_bar[2];
-    /*if (J < 0.00001f) {
-        J = 0.0001f;
-    }*/
+
     T ln_J = log(J);
 
     // 1. update Psi
@@ -961,14 +849,19 @@ void ExplicitTimeIntegrator::computeForceCoefficient(Model& model) {
     auto material = (ElasticMaterial*)materialPtr.get();
     const unsigned int numthread = 256;
     const unsigned int numblock = (_numParticle + numthread - 1) / numthread;
-    //computeContributionFixedCorotated << <numblock, numthread>> > (particlePtr->_numParticle, particlePtr->d_F,
-    //    material->_lambda, material->_mu, material->_volume, d_contribution);
 
-    //computeContributionNeoHookean << <numblock, numthread >> > (DX, particlePtr->d_FP, particlePtr->_numParticle, particlePtr->d_F, particlePtr->d_maxPsi, particlePtr->d_phase_C,
-    //    material->_kappa, material->_mu, material->_volume, d_contribution);
 
+
+#if (Energy_Model == 0)
+    computeContributionFixedCorotated << <numblock, numthread>> > (particlePtr->_numParticle, particlePtr->d_F,
+        material->_lambda, material->_mu, material->_volume, d_contribution);
+#elif (Energy_Model == 1)
+    computeContributionNeoHookean << <numblock, numthread >> > (DX, particlePtr->d_FP, particlePtr->_numParticle, particlePtr->d_F, particlePtr->d_maxPsi, particlePtr->d_phase_C,
+        material->_kappa, material->_mu, material->_volume, d_contribution);
+#elif (Energy_Model == 2)
     applyVonMises << <numblock, numthread >> > (particlePtr->d_g, particlePtr->d_alpha, material->_lambda, material->_mu, DX, particlePtr->d_FP, particlePtr->_numParticle, particlePtr->d_F, particlePtr->d_maxPsi, particlePtr->d_phase_C,
         material->_kappa, material->_volume, d_contribution);
+#endif
 }
 
 void ExplicitTimeIntegrator::computeParticlePhase_vol(Model& model) {
@@ -1000,120 +893,54 @@ void ExplicitTimeIntegrator::integrate(int type, T* simulationTime, T* preproces
     trans->rebuild();
 
 	cudaEventRecord(end0);
-	
-	
     computeCellIndex(trans, particles);
     computeForceCoefficient(model);
-
-    /*int numbers2 = trans->_numTotalPage * 64;
-    int threadNumA2 = 256;
-    int blockNumA2 = (numbers2 + threadNumA2 - 1) / threadNumA2;
-    setArray << <blockNumA2, threadNumA2 >> > (grid->d_grid_r, numbers2, 0.f);*/
-
     transferP2G(dt, particles, grid, trans);
-
-    /*T test2;
-
-    transGrid_to_vector_kernal << < trans->_numTotalPage, 64 >> > (grid->d_channels, grid->d_grid_r, 8);
-    getNormSquare_b(grid->d_grid_r, grid->d_grid_temp, &test2, numbers2);
-    std::cout << "*********************W = " << test2 << std::endl;
-    if (_isnanf(test2)) {
-        exit(0);
-    }*/
     undateGrid(dt, grid, trans);
 
-	T test;
-    if(1-type)
+    bool update_phase_field = true;
+
+#if (Energy_Model == 0)
+    update_phase_field = false;
+#endif
+
+    if(update_phase_field)
     {
         //////////////////////////////////////////////////
         /////////////////CG_SOLVER////////////////////////
         //////////////////////////////////////////////////
 		T cg_dt = dt;
-
-
-
         computeParticlePhase_vol(model);
-
-		/*getNormSquare_b(particles->d_vol, particles->d_memTrunk, &test, particles->_numParticle);
-		std::cout << "*********************particles->d_vol = " << test << std::endl;*/
-
         transferVolP2G(cg_dt, model, grid, trans);//rhs
         int numbers = trans->_numTotalPage * 64;
 		int threadNumA = 256;
 		int blockNumA = (numbers + threadNumA - 1) / threadNumA;
 
 		setArray << <blockNumA, threadNumA >> > (grid->d_grid_r, numbers, 0.f);
-		//CUDA_SAFE_CALL(cudaMemset(grid->d_grid_r, 0.f, sizeof(T) * numbers));
-
-		//transGrid_to_vector_kernal << < trans->_numTotalPage, 64 >> > (grid->d_channels, grid->d_grid_r, 7);
-		/*getNormSquare_b(grid->d_grid_r, grid->d_grid_temp, &test, numbers);
-		std::cout << "*********************grid_phase = " << test << std::endl;*/
-
 		setArray << <blockNumA, threadNumA >> > (grid->d_grid_x, numbers, 0.f);
-        //CUDA_SAFE_CALL(cudaMemset(grid->d_grid_x, 0.f, sizeof(T) * numbers));
         int maxIterationTimes = 100;
         T tolerance = 1e-6f;
         T convergence_norm = 0;
         transGrid_to_vector_kernal << < trans->_numTotalPage, 64 >> > (grid->d_channels, grid->d_grid_r, 10);
-
-		/*cudaMemcpy(grid->_maxVel, &convergence_norm, sizeof(T), cudaMemcpyHostToDevice);
-		calcMaxVel2 << <blockNumA, threadNumA >> > (numbers, grid->d_grid_r, grid->_maxVel);
-		cudaMemcpy(&convergence_norm, grid->_maxVel, sizeof(T), cudaMemcpyDeviceToHost);
-		convergence_norm = sqrt(convergence_norm);*/
         getNormSquare_b(grid->d_grid_r, grid->d_grid_temp, &convergence_norm, numbers);
-       
-
-
-        //if (_isnanf(convergence_norm)) {
-        //    exit(0);
-        //}
-        //std::cout << "*********************convergence_norm = " << convergence_norm << std::endl;
-		//T relative_tolerance = (T)1e-12;// convergence_norm* (std::is_same<T, float>::value ? (T)1e-6 : (T)1e-12);
+      
 		setArray << <blockNumA, threadNumA >> > (grid->d_grid_mr, numbers, 0.f);
-        //CUDA_SAFE_CALL(cudaMemset(grid->d_grid_mr, 0.f, sizeof(T) * numbers));
         preCondition_CG(cg_dt, model, grid, trans);
 
         CUDA_SAFE_CALL(cudaMemcpy(grid->d_grid_s, grid->d_grid_mr, sizeof(T) * numbers, cudaMemcpyDeviceToDevice));
 
         T rho_old;
-
-		/*cudaMemset(grid->innerProductR, 0, sizeof(T));
-		InnerProduct << <blockNumA, threadNumA >> > (grid->d_grid_r, grid->d_grid_mr, grid->innerProductR, numbers);
-		cudaMemcpy(&rho_old, grid->innerProductR, sizeof(T), cudaMemcpyDeviceToHost);*/
         getDotProduct(grid->d_grid_r, grid->d_grid_mr, grid->d_grid_temp, &rho_old, numbers);
-		
-		/*getNormSquare_b(grid->d_grid_mr, grid->d_grid_temp, &test, numbers);
-		std::cout << "*********************grid_mr = " << test << std::endl;*/
         for (int iterations = 0; iterations < maxIterationTimes; iterations++) {    
-
-
-
-            //std::cout << "iterations = " << iterations << std::endl;
 			setArray << <blockNumA, threadNumA >> > (grid->d_grid_q, numbers, 0.f);
-            //CUDA_SAFE_CALL(cudaMemset(grid->d_grid_q, 0.f, sizeof(T) * numbers));
             Ax_CG(cg_dt, model, grid, trans);
             T s_dot_q;
-
-			/*cudaMemset(grid->innerProductR, 0, sizeof(T));
-			InnerProduct << <blockNumA, threadNumA >> > (grid->d_grid_s, grid->d_grid_q, grid->innerProductR, numbers);
-			cudaMemcpy(&s_dot_q, grid->innerProductR, sizeof(T), cudaMemcpyDeviceToHost);*/
             getDotProduct(grid->d_grid_s, grid->d_grid_q, grid->d_grid_temp, &s_dot_q, numbers);
-
-
-
-            //std::cout << "                rho_old = " << rho_old << std::endl;
-            //std::cout << "                                     s_dot_q = " << s_dot_q << std::endl;
-            T alpha = rho_old / s_dot_q;// s_dot_q ? rho_old / s_dot_q : (T)std::numeric_limits<T>::max();
+            T alpha = rho_old / s_dot_q;
 
             cal_grid_l_vad_kernal << < trans->_numTotalPage, 64 >> > (grid->d_channels, alpha, grid->d_grid_s, grid->d_grid_x);
             cal_grid_l_sub2Zero_kernal << < trans->_numTotalPage, 64 >> > (grid->d_channels, alpha, grid->d_grid_q, grid->d_grid_r);
             
-
-			/*convergence_norm = 0;
-			cudaMemcpy(grid->_maxVel, &convergence_norm, sizeof(T), cudaMemcpyHostToDevice);
-			calcMaxVel2 << <blockNumA, threadNumA >> > (numbers, grid->d_grid_r, grid->_maxVel);
-			cudaMemcpy(&convergence_norm, grid->_maxVel, sizeof(T), cudaMemcpyDeviceToHost);
-			convergence_norm = sqrt(convergence_norm);*/
             getNormSquare_b(grid->d_grid_r, grid->d_grid_temp, &convergence_norm, numbers);
 
 
@@ -1122,14 +949,8 @@ void ExplicitTimeIntegrator::integrate(int type, T* simulationTime, T* preproces
             }
             preCondition_CG(cg_dt, model, grid, trans);
 
-			/*getNormSquare_b(grid->d_grid_mr, grid->d_grid_temp, &test, numbers);
-			std::cout << "*********************grid_mr = " << test << std::endl;*/
-
             T rho;
 
-			/*cudaMemset(grid->innerProductR, 0, sizeof(T));
-			InnerProduct << <blockNumA, threadNumA >> > (grid->d_grid_r, grid->d_grid_mr, grid->innerProductR, numbers);
-			cudaMemcpy(&rho, grid->innerProductR, sizeof(T), cudaMemcpyDeviceToHost);*/
             getDotProduct(grid->d_grid_r, grid->d_grid_mr, grid->d_grid_temp, &rho, numbers);
 
 
@@ -1144,11 +965,7 @@ void ExplicitTimeIntegrator::integrate(int type, T* simulationTime, T* preproces
         }
         update_grid_phase << < trans->_numTotalPage, 64 >> > (grid->d_channels, grid->d_grid_x);
         PullGrid(grid, trans, totalT);
-
         totalT += dt;
-        //////////////////////////////////////////////////
-        //////////////////END_CG//////////////////////////
-        //////////////////////////////////////////////////
     }
     else {
         resolveCollision(grid, trans);
