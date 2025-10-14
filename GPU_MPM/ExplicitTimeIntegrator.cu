@@ -5,7 +5,7 @@
 #include"G2PKernal.cuh"
 #include<iostream>
 #include<fstream>
-#include "zsSVD.cuh"
+#include "QRSVD.hpp"
 
 
 
@@ -29,7 +29,7 @@ __global__ void computeContributionFixedCorotated(const int numParticle, const T
     F[6] = d_F[parid + 6 * numParticle]; F[7] = d_F[parid + 7 * numParticle]; F[8] = d_F[parid + 8 * numParticle];
 
     double U[9]; double S[3]; double V[9];
-    msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
+    __GEIGEN__::math::msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
 
     //
     T J = S[0] * S[1] * S[2]; T scaled_mu = 2.f * mu; T scaled_lambda = lambda * (J - 1.f);
@@ -141,7 +141,7 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
     F[6] = d_F[parid + 6 * numParticle]; F[7] = d_F[parid + 7 * numParticle]; F[8] = d_F[parid + 8 * numParticle];
 
     double U[9]; double S[3]; double V[9];
-    msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
+    __GEIGEN__::math::msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
 
     double C[9];
     C[0] = 2 * mu + lambda; C[1] = lambda;          C[2] = lambda;
@@ -380,7 +380,7 @@ __global__ void computeContributionNeoHookean(T dx, T* FP, const int numParticle
 
     double U[9]; double S[3]; double V[9];
 
-    msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
+    __GEIGEN__::math::msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
 
     if (S[0] < 0.0001f)S[0] = 0.0001f;
     if (S[1] < 0.0001f)S[1] = 0.0001f;
@@ -878,7 +878,7 @@ void ExplicitTimeIntegrator::computeParticlePhase_vol(Model& model) {
 //    updateVelocity << <trans->_numTotalPage, 64 >> > (dt, grid->d_channels);
 //}
 T totalT = 0.f;
-void ExplicitTimeIntegrator::integrate(int type, float* simulationTime, float* preprocessTime, const T dt, Model& model, std::unique_ptr<SPGrid>& grid, std::unique_ptr<DomainTransformer>& trans) {
+void ExplicitTimeIntegrator::integrate(int type, T* simulationTime, T* preprocessTime, const T dt, Model& model, std::unique_ptr<SPGrid>& grid, std::unique_ptr<DomainTransformer>& trans) {
     
     auto& particles = model.getParticlesPtr();
 	cudaEvent_t start, end0,end1,end2;
@@ -886,7 +886,7 @@ void ExplicitTimeIntegrator::integrate(int type, float* simulationTime, float* p
 	(cudaEventCreate(&end0));
 	(cudaEventCreate(&end1));
 	(cudaEventCreate(&end2));
-	float time1,time2,time3;
+	T time1,time2,time3;
 
 	cudaEventRecord(start);
 

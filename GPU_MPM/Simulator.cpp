@@ -87,14 +87,15 @@ bool MPMSimulator::build(unsigned int buildtype) {
     T poissonRatio = 0.4;
     T density = rateSize*rateSize*rateSize*3.f;
     T totalVolume = 1.f;
-
+    //auto assets_dir = std::string{ gipc::assets_dir() };
+    auto assets_path = std::string{ gmpm_ASSETS_DIR };
     if (buildtype == 0) {
         int geometryType = 0;
         //tableSize = 100000;
         tableSize = 36000 * rateSize * rateSize * rateSize * MEMORY_SCALE;
 
         Sample sple;
-        h_pos = sple.readObj("sample/tube_100.obj");//sple.Initialize_Data_cube();
+        h_pos = sple.readObj(assets_path + "sample/tube_100.obj");//sple.Initialize_Data_cube();
         //h_pos = sple.Initialize_Data_cube();
         numParticle = h_pos.size();
         totalVolume = 0.75f * 0.75f * 0.75f;
@@ -120,7 +121,7 @@ bool MPMSimulator::build(unsigned int buildtype) {
             minCorner[i] = center[i] - 0.5 * res[i];
 
         Sample sple;
-        std::string fileName = "sample/two_dragons.sdf";
+        std::string fileName = assets_path+"sample/two_dragons.sdf";
         h_pos = sple.Initial_data(center, res, fileName);
 
 

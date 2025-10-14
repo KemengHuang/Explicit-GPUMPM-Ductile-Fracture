@@ -6,7 +6,7 @@ DESCRIPTION
 
 This project is the source code of the paper: [A Novel Plastic Phase-Field Method for Ductile Fracture with GPU Optimization](https://doi.org/10.1111/cgf.14130)
 
-This is an optimized GPU MPM framework designed for fracture simulation, featuring a clean codebase without unnecessary contents. This framework greatly aids in the development of GPU MPM applications, as it can be compiled within 10 seconds. In terms of performance, it stands as one of the most efficient single GPU MPM frameworks available.
+This is an optimized GPU MPM framework designed for fracture simulation, featuring a clean codebase without unnecessary contents. This framework greatly aids in the development of GPU MPM applications.
 
 
 Source code contributor: [Kemeng Huang](https://kemenghuang.github.io)
@@ -45,21 +45,30 @@ Hardware requirements: Nvidia GPUs
 
 Support platforms: Windows, Linux 
 
-
-
 ## Dependencies
 
+| Name                                   | Version | Usage                                               | Import         |
+| -------------------------------------- | ------- | --------------------------------------------------- | -------------- |
+| cuda                                   | >=11.0  | GPU programming                                     | system install |
+| eigen3                                 | 3.4.0   | matrix calculation                                  | package        |
+| freeglut                               | 3.4.0   | visualization                                       | package        |
+| glew                                   | 2.2.0#3 | visualization                                       | package        |
+
 ### linux
-*CUDA, glew, freeglut
 
+We use CMake to build the project.
 
-`sudo apt install libglew-dev freeglut3-dev
+```bash
+sudo apt install libglew-dev freeglut3-dev libeigen3-dev
+```
 
-
-Once the dependencies are installed, proceed to create a CMakeLists.txt file to facilitate building the project.
 
 ### Windows
-Please ensure that CUDA and Visual Studio are installed on your system. Modify the CUDA version in the xxx.vcxproj file to match the version you have installed, and then simply open the project using Visual Studio.
+We use [vcpkg](https://github.com/microsoft/vcpkg) to manage the libraries we need and use CMake to build the project. The simplest way to let CMake detect vcpkg is to set the system environment variable `CMAKE_TOOLCHAIN_FILE` to `(YOUR_VCPKG_PARENT_FOLDER)/vcpkg/scripts/buildsystems/vcpkg.cmake`
+
+```shell
+vcpkg install eigen3 freeglut glew
+```
 
 
 
@@ -68,8 +77,7 @@ Please ensure that CUDA and Visual Studio are installed on your system. Modify t
 EXTERNAL CREDITS
 ================
 
-This work utilizes the following code, which have been included here for convenience:
-Copyrights are retained by the original authors.
+This work refers to the code from the following open-source repositories:
 
 zpc https://github.com/KemengHuang/zpc
 
