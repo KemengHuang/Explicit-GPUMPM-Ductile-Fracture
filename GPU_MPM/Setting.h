@@ -1,7 +1,7 @@
 #pragma once
 
 
-using T = float;
+using T = double;
 constexpr const T rateSize = 2.f;
 constexpr const unsigned int N = 128 * rateSize;
 constexpr const T dx = 1.f / N;
@@ -28,7 +28,7 @@ constexpr const int typem = 1;
 
 #define PARA_GAMA 0.01f
 #define PARA_P 0.0001f
-#define Energy_Model 2 //0 no_fracture,  1 stk_fracture,  2 VonMises_plastic_fracture
+#define Energy_Model 0 //0 no_fracture,  1 stk_fracture,  2 VonMises_plastic_fracture
 
 struct vector3T {
     T x;

@@ -165,7 +165,13 @@ void drawParticles(int step) {
 	// Point buffers
 	glBindBuffer(GL_ARRAY_BUFFER, position_vbo_);
 	glBufferData(GL_ARRAY_BUFFER, nump_ * sizeof(vector3T), &(simulatorMPM.h_pos[0]), GL_DYNAMIC_DRAW);
-	glVertexPointer(3, GL_FLOAT, 0, 0x0);
+	if (sizeof(T) == 4) {
+		glVertexPointer(3, GL_FLOAT, 0, 0x0);
+	}
+	else if (sizeof(T) == 8) {
+		glVertexPointer(3, GL_DOUBLE, 0, 0x0);
+	}
+	
 	glBindBuffer(GL_ARRAY_BUFFER, color_vbo_);
 	glBufferData(GL_ARRAY_BUFFER, nump_ * sizeof(uint), simulatorMPM.getModelParticlePtr(0)->h_color, GL_DYNAMIC_DRAW);
 	glColorPointer(4, GL_UNSIGNED_BYTE, 0, 0x0);
