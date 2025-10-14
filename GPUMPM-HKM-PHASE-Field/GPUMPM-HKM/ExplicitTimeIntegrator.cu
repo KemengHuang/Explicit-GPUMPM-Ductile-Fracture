@@ -878,7 +878,7 @@ void ExplicitTimeIntegrator::computeParticlePhase_vol(Model& model) {
 //    updateVelocity << <trans->_numTotalPage, 64 >> > (dt, grid->d_channels);
 //}
 T totalT = 0.f;
-void ExplicitTimeIntegrator::integrate(int type, T* simulationTime, T* preprocessTime, const T dt, Model& model, std::unique_ptr<SPGrid>& grid, std::unique_ptr<DomainTransformer>& trans) {
+void ExplicitTimeIntegrator::integrate(int type, float* simulationTime, float* preprocessTime, const T dt, Model& model, std::unique_ptr<SPGrid>& grid, std::unique_ptr<DomainTransformer>& trans) {
     
     auto& particles = model.getParticlesPtr();
 	cudaEvent_t start, end0,end1,end2;
@@ -886,7 +886,7 @@ void ExplicitTimeIntegrator::integrate(int type, T* simulationTime, T* preproces
 	(cudaEventCreate(&end0));
 	(cudaEventCreate(&end1));
 	(cudaEventCreate(&end2));
-	T time1,time2,time3;
+	float time1,time2,time3;
 
 	cudaEventRecord(start);
 

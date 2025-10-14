@@ -1,8 +1,8 @@
 #pragma once
 
 
-using T = float;
-constexpr const T rateSize = 2.f;
+using T = double;
+constexpr const T rateSize = 4.f;
 constexpr const unsigned int N = 128 * rateSize;
 constexpr const T dx = 1.f / N;
 constexpr const T DX = dx;// *rateSize;
@@ -53,6 +53,3 @@ struct CH_STRUCT {
     T ch13;
     T ch14;
 };
-
-
-
