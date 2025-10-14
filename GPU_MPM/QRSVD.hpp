@@ -317,15 +317,15 @@ namespace __GEIGEN__
 
         template <typename T>
         constexpr void msvd(
-            T a11, double a12, double a13, double a21, double a22, double a23, double a31, double a32, double a33,			// input A     
-            double& u11, double& u12, double& u13, double& u21, double& u22, double& u23, double& u31, double& u32, double& u33,	// output U      
-            double& s11,
-            double& s22,
-            double& s33,
-            double& v11, double& v12, double& v13, double& v21, double& v22, double& v23, double& v31, double& v32, double& v33	// output V
+            T a11, T a12, T a13, T a21, T a22, T a23, T a31, T a32, T a33,			// input A     
+            T& u11, T& u12, T& u13, T& u21, T& u22, T& u23, T& u31, T& u32, T& u33,	// output U      
+            T& s11,
+            T& s22,
+            T& s33,
+            T& v11, T& v12, T& v13, T& v21, T& v22, T& v23, T& v31, T& v32, T& v33	// output V
         )noexcept {
-            Eigen::Matrix<double, 3, 3> F, U, V;
-            Eigen::Matrix<double, 3, 1> S;
+            Eigen::Matrix<T, 3, 3> F, U, V;
+            Eigen::Matrix<T, 3, 1> S;
             F(0, 0) = a11;
             F(0, 1) = a12;
             F(0, 2) = a13;
