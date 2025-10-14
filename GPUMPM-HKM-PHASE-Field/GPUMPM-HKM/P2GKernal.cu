@@ -30,7 +30,7 @@ __global__ void P2G_MLS(
     else
         bBoundary = true;
 
-    unsigned int mark = __ballot(bBoundary); // a bit-mask 
+    unsigned int mark = __ballot_sync(0xffffffff, bBoundary); // a bit-mask 
     mark = __brev(mark);
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
@@ -38,7 +38,7 @@ __global__ void P2G_MLS(
         int tmp = __shfl_down(mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
-    mark = __shfl(mark, 0);
+    mark = __shfl_sync(0xffffffff, mark, 0);
     __syncthreads();
 
     int smallest_node[3];
@@ -197,7 +197,7 @@ __global__ void P2G_APIC_CONFLICT_FREE(
     else
         bBoundary = true;
 
-    unsigned int mark = __ballot(bBoundary); // a bit-mask 
+    unsigned int mark = __ballot_sync(0xffffffff, bBoundary); // a bit-mask 
     mark = __brev(mark);
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
@@ -205,7 +205,7 @@ __global__ void P2G_APIC_CONFLICT_FREE(
         int tmp = __shfl_down(mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
-    mark = __shfl(mark, 0);
+    mark = __shfl_sync(0xffffffff, mark, 0);
     __syncthreads();
 
     int smallest_node[3];
@@ -376,7 +376,7 @@ __global__ void P2G_APIC_CONFLICT_FREE(
 //    else
 //        bBoundary = true;
 //
-//    unsigned int mark = __ballot(bBoundary); // a bit-mask 
+//    unsigned int mark = __ballot_sync(0xffffffff, bBoundary); // a bit-mask 
 //    mark = __brev(mark);
 //    unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
 //    mark = interval;
@@ -384,7 +384,7 @@ __global__ void P2G_APIC_CONFLICT_FREE(
 //        int tmp = __shfl_down(mark, iter);
 //        mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
 //    }
-//    mark = __shfl(mark, 0);
+//    mark = __shfl_sync(0xffffffff, mark, 0);
 //    __syncthreads();
 //
 //    int smallest_node[3];
@@ -533,7 +533,7 @@ __global__ void P2G_APIC(
     else
         bBoundary = true;
 
-    unsigned int mark = __ballot(bBoundary); // a bit-mask 
+    unsigned int mark = __ballot_sync(0xffffffff, bBoundary); // a bit-mask 
     mark = __brev(mark);
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
@@ -541,7 +541,7 @@ __global__ void P2G_APIC(
         int tmp = __shfl_down(mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
-    mark = __shfl(mark, 0);
+    mark = __shfl_sync(0xffffffff, mark, 0);
     __syncthreads();
 
     int smallest_node[3];
@@ -746,7 +746,7 @@ __global__ void volP2G_APIC(
     else
         bBoundary = true;
 
-    unsigned int mark = __ballot(bBoundary); // a bit-mask 
+    unsigned int mark = __ballot_sync(0xffffffff, bBoundary); // a bit-mask 
     mark = __brev(mark);
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
@@ -754,7 +754,7 @@ __global__ void volP2G_APIC(
         int tmp = __shfl_down(mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
-    mark = __shfl(mark, 0);
+    mark = __shfl_sync(0xffffffff, mark, 0);
     __syncthreads();
 
     int smallest_node[3];
@@ -860,7 +860,7 @@ __global__ void preConditionP2G_APIC(
     else
         bBoundary = true;
 
-    unsigned int mark = __ballot(bBoundary); // a bit-mask 
+    unsigned int mark = __ballot_sync(0xffffffff, bBoundary); // a bit-mask 
     mark = __brev(mark);
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
@@ -868,7 +868,7 @@ __global__ void preConditionP2G_APIC(
         int tmp = __shfl_down(mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
-    mark = __shfl(mark, 0);
+    mark = __shfl_sync(0xffffffff, mark, 0);
     __syncthreads();
 
     int smallest_node[3];
@@ -1002,7 +1002,7 @@ __global__ void AxP2G_APIC(
     else
         bBoundary = true;
 
-    unsigned int mark = __ballot(bBoundary); // a bit-mask 
+    unsigned int mark = __ballot_sync(0xffffffff, bBoundary); // a bit-mask 
     mark = __brev(mark);
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
@@ -1010,7 +1010,7 @@ __global__ void AxP2G_APIC(
         int tmp = __shfl_down(mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
-    mark = __shfl(mark, 0);
+    mark = __shfl_sync(0xffffffff, mark, 0);
     __syncthreads();
 
     int smallest_node[3];
