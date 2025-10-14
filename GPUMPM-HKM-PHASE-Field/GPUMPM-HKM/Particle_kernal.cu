@@ -89,7 +89,7 @@ __global__ void calVelSqur(const int numParticle, const vector3T* d_vel, T* squr
 		warpNum = ((blockDim.x) >> 5);
 	}
 	for (int i = 1; i < 32; i = (i << 1)) {
-		nextTp = __shfl_down(temp, i);
+		nextTp = __shfl_down_sync(__activemask(), temp, i);
 		if (temp < nextTp) {
 			temp = nextTp;
 		}
@@ -102,7 +102,7 @@ __global__ void calVelSqur(const int numParticle, const vector3T* d_vel, T* squr
 	if (warpNum > 1) {	
 		temp = tep[threadIdx.x];
 		for (int i = 1; i < warpNum; i = (i << 1)) {
-			nextTp = __shfl_down(temp, i);
+			nextTp = __shfl_down_sync(__activemask(), temp, i);
 			if (temp < nextTp) {
 				temp = nextTp;
 			}
@@ -336,7 +336,7 @@ void mymaxF(T* mem, int numbers) {
 		warpNum = ((blockDim.x) >> 5);
 	}
 	for (int i = 1; i < 32; i = (i << 1)) {
-		nextTp = __shfl_down(temp, i);
+		nextTp = __shfl_down_sync(__activemask(), temp, i);
 		if (temp < nextTp) {
 			temp = nextTp;
 		}
@@ -351,7 +351,7 @@ void mymaxF(T* mem, int numbers) {
 	    temp = tep[threadIdx.x];
 	//	warpNum = ((tidNum + 31) >> 5);
 		for (int i = 1; i < warpNum; i = (i << 1)) {
-			nextTp = __shfl_down(temp, i);
+			nextTp = __shfl_down_sync(__activemask(), temp, i);
 			if (temp < nextTp) {
 				temp = nextTp;
 			}

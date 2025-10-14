@@ -35,7 +35,7 @@ __global__ void P2G_MLS(
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
     for (int iter = 1; iter & 0x1f; iter <<= 1) {
-        int tmp = __shfl_down(mark, iter);
+        int tmp = __shfl_down_sync(__activemask(), mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
     mark = __shfl_sync(0xffffffff, mark, 0);
@@ -124,7 +124,7 @@ __global__ void P2G_MLS(
 
 
                     for (int iter = 1; iter <= mark; iter <<= 1) {
-                        tmp[7]; for (int i = 0; i < 7; ++i) tmp[i] = __shfl_down(val[i], iter);
+                        tmp[7]; for (int i = 0; i < 7; ++i) tmp[i] = __shfl_down_sync(__activemask(), val[i], iter);
                         if (interval >= iter) for (int i = 0; i < 7; ++i) val[i] += tmp[i];
                     }
 
@@ -202,7 +202,7 @@ __global__ void P2G_APIC_CONFLICT_FREE(
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
     for (int iter = 1; iter & 0x1f; iter <<= 1) {
-        int tmp = __shfl_down(mark, iter);
+        int tmp = __shfl_down_sync(__activemask(), mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
     mark = __shfl_sync(0xffffffff, mark, 0);
@@ -299,7 +299,7 @@ __global__ void P2G_APIC_CONFLICT_FREE(
                     val[3] *= val[0];
 
                     for (int iter = 1; iter <= mark; iter <<= 1) {
-                        T tmp[7]; for (int i = 0; i < 7; ++i) tmp[i] = __shfl_down(val[i], iter);
+                        T tmp[7]; for (int i = 0; i < 7; ++i) tmp[i] = __shfl_down_sync(__activemask(), val[i], iter);
                         if (interval >= iter) for (int i = 0; i < 7; ++i) val[i] += tmp[i];
                     }
 
@@ -381,7 +381,7 @@ __global__ void P2G_APIC_CONFLICT_FREE(
 //    unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
 //    mark = interval;
 //    for (int iter = 1; iter & 0x1f; iter <<= 1) {
-//        int tmp = __shfl_down(mark, iter);
+//        int tmp = __shfl_down_sync(__activemask(), mark, iter);
 //        mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
 //    }
 //    mark = __shfl_sync(0xffffffff, mark, 0);
@@ -461,7 +461,7 @@ __global__ void P2G_APIC_CONFLICT_FREE(
 //                    val[6] = -(sig[2] * wg[0] + sig[5] * wg[1] + sig[8] * wg[2]);
 //
 //                    for (int iter = 1; iter <= mark; iter <<= 1) {
-//                        T tmp[7]; for (int i = 0; i < 7; ++i) tmp[i] = __shfl_down(val[i], iter);
+//                        T tmp[7]; for (int i = 0; i < 7; ++i) tmp[i] = __shfl_down_sync(__activemask(), val[i], iter);
 //                        if (interval >= iter) for (int i = 0; i < 7; ++i) val[i] += tmp[i];
 //                    }
 //
@@ -538,7 +538,7 @@ __global__ void P2G_APIC(
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
     for (int iter = 1; iter & 0x1f; iter <<= 1) {
-        int tmp = __shfl_down(mark, iter);
+        int tmp = __shfl_down_sync(__activemask(), mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
     mark = __shfl_sync(0xffffffff, mark, 0);
@@ -647,7 +647,7 @@ __global__ void P2G_APIC(
 
 					//for (int i = 0; i < 10; i++) {
 					//	for (int iter = 1; iter <= mark; iter <<= 1) {
-					//		tmp = __shfl_down(val[i], iter);
+					//		tmp = __shfl_down_sync(__activemask(), val[i], iter);
 					//		if (interval >= iter) {
 					//			val[i] += tmp;
 					//		}
@@ -656,7 +656,7 @@ __global__ void P2G_APIC(
 
 
                     for (int iter = 1; iter <= mark; iter <<= 1) {
-                        for (int i = 0; i < 10; ++i) tmp[i] = __shfl_down(val[i], iter);
+                        for (int i = 0; i < 10; ++i) tmp[i] = __shfl_down_sync(__activemask(), val[i], iter);
                         if (interval >= iter) for (int i = 0; i < 10; ++i) val[i] += tmp[i];
                     }
 
@@ -751,7 +751,7 @@ __global__ void volP2G_APIC(
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
     for (int iter = 1; iter & 0x1f; iter <<= 1) {
-        int tmp = __shfl_down(mark, iter);
+        int tmp = __shfl_down_sync(__activemask(), mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
     mark = __shfl_sync(0xffffffff, mark, 0);
@@ -801,7 +801,7 @@ __global__ void volP2G_APIC(
                     val = p_vol * wOneD[0][i] * wOneD[1][j] * wOneD[2][k] * (g_c / dt + parabolic_M);
                     //volatile T* vol_sh_max = sha_partialMax2
                     for (int iter = 1; iter <= mark; iter <<= 1) {
-                        tmp = __shfl_down(val, iter);
+                        tmp = __shfl_down_sync(__activemask(), val, iter);
                         if (interval >= iter) val += tmp;
                     }
                     if (bBoundary)
@@ -865,7 +865,7 @@ __global__ void preConditionP2G_APIC(
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
     for (int iter = 1; iter & 0x1f; iter <<= 1) {
-        int tmp = __shfl_down(mark, iter);
+        int tmp = __shfl_down_sync(__activemask(), mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
     mark = __shfl_sync(0xffffffff, mark, 0);
@@ -911,7 +911,7 @@ __global__ void preConditionP2G_APIC(
                     val = vol * wOneD[0][i] * wOneD[1][j] * wOneD[2][k] * (FP * parabolic_M + (1.f / dt));
                     //volatile T* vol_sh_max = sha_partialMax2
                     for (int iter = 1; iter <= mark; iter <<= 1) {
-                        tmp = __shfl_down(val, iter);
+                        tmp = __shfl_down_sync(__activemask(), val, iter);
                         if (interval >= iter) val += tmp;
                     }
                     if (bBoundary)
@@ -1007,7 +1007,7 @@ __global__ void AxP2G_APIC(
     unsigned int interval = min(__clz(mark << (laneid + 1)), 31 - laneid);
     mark = interval;
     for (int iter = 1; iter & 0x1f; iter <<= 1) {
-        int tmp = __shfl_down(mark, iter);
+        int tmp = __shfl_down_sync(__activemask(), mark, iter);
         mark = tmp > mark ? tmp : mark; /*if (tmp > mark) mark = tmp;*/
     }
     mark = __shfl_sync(0xffffffff, mark, 0);
@@ -1084,7 +1084,7 @@ __global__ void AxP2G_APIC(
                     val = g_x * (p_vol * wOneD[0][i] * wOneD[1][j] * wOneD[2][k] * (p_fp * parabolic_M + 1.f / dt) + HW * parabolic_M);
                     //volatile T* vol_sh_max = sha_partialMax2
                     for (int iter = 1; iter <= mark; iter <<= 1) {
-                        tmp = __shfl_down(val, iter);
+                        tmp = __shfl_down_sync(__activemask(), val, iter);
                         if (interval >= iter)  val += tmp;
                     }
 

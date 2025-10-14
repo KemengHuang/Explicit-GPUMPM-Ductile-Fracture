@@ -503,8 +503,8 @@ void mysumFsquare(T* mem1, T* mem2, int numbers) {
 
 	T temp2;
 	for (int i = 1; i < 32; i = (i << 1)) {
-		//temp += __shfl_down(temp, i);
-		temp2 = __shfl_down(temp, i);
+		//temp += __shfl_down_sync(__activemask(), temp, i);
+		temp2 = __shfl_down_sync(__activemask(), temp, i);
 		temp = temp > temp2 ? temp : temp2;
 	}
 	if (warpTid == 0) {
@@ -516,8 +516,8 @@ void mysumFsquare(T* mem1, T* mem2, int numbers) {
 		temp = tep[threadIdx.x];
 		//T temp2;
 		for (int i = 1; i < warpNum; i = (i << 1)) {
-			//temp += __shfl_down(temp, i);
-			temp2 = __shfl_down(temp, i);
+			//temp += __shfl_down_sync(__activemask(), temp, i);
+			temp2 = __shfl_down_sync(__activemask(), temp, i);
 			temp = temp > temp2 ? temp : temp2;
 		}
 	}
@@ -546,8 +546,8 @@ void mysumFm(T* mem, int numbers) {
 	}
 	T temp2;
 	for (int i = 1; i < 32; i = (i << 1)) {
-		//temp += __shfl_down(temp, i);
-		temp2 = __shfl_down(temp, i);
+		//temp += __shfl_down_sync(__activemask(), temp, i);
+		temp2 = __shfl_down_sync(__activemask(), temp, i);
 		temp = temp > temp2 ? temp : temp2;
 	}
 	if (warpTid == 0) {
@@ -559,8 +559,8 @@ void mysumFm(T* mem, int numbers) {
 
 		temp = tep[threadIdx.x];
 		for (int i = 1; i < warpNum; i = (i << 1)) {
-			//temp += __shfl_down(temp, i);
-			temp2 = __shfl_down(temp, i);
+			//temp += __shfl_down_sync(__activemask(), temp, i);
+			temp2 = __shfl_down_sync(__activemask(), temp, i);
 			temp = temp > temp2 ? temp : temp2;
 		}
 
@@ -589,7 +589,7 @@ void myDotSum(T* A, T* B, T* C, int numbers) {
 		warpNum = ((blockDim.x) >> 5);
 	}
 	for (int i = 1; i < 32; i = (i << 1)) {
-		temp += __shfl_down(temp, i);
+		temp += __shfl_down_sync(__activemask(), temp, i);
 	}
 	if (warpTid == 0) {
 		tep[warpId] = temp;
@@ -599,7 +599,7 @@ void myDotSum(T* A, T* B, T* C, int numbers) {
 	if (warpNum > 1) {
 		temp = tep[threadIdx.x];
 		for (int i = 1; i < warpNum; i = (i << 1)) {
-			temp += __shfl_down(temp, i);
+			temp += __shfl_down_sync(__activemask(), temp, i);
 		}
 
 	}
@@ -705,7 +705,7 @@ __global__ void InnerProduct(T* d_implicit_x, T* d_implicit_y, T* _innerProduct,
 
 	float sum = d_implicit_x[idx] * d_implicit_y[idx];
 	for (int offset = 32 / 2; offset > 0; offset /= 2)
-		sum += __shfl_down(sum, offset);
+		sum += __shfl_down_sync(__activemask(), sum, offset);
 	if (threadIdx.x % 32 == 0)    atomicAdd(_innerProduct, sum);
 }
 
