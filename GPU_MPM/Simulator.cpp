@@ -251,7 +251,7 @@ void MPMSimulator::simulateStick(float* cflTime, float* preTime, float* simuTime
 
 	T timeToF = _currentFrame / _frameRate;
 
-	printf("          current substep %d\n", substep);
+	//printf("          current substep %d\n", substep);
 
 	cudaEventRecord(start);
 	T dt = computeDt(_currentTime, timeToF);

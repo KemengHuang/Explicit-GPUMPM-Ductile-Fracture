@@ -1,6 +1,6 @@
 #include"SPGridMask.h"
 #include<iostream>
-
+#include <bitset>
 unsigned long long Bit_Spread(unsigned long long mask, unsigned long long uldata)
 {
     
@@ -83,7 +83,7 @@ unsigned long long SPGridMask::Linear_Offset(unsigned long long* mask, const int
 
 
 void SPGridMask::Cal_elemMask() {
-	unsigned int block_bits = 12 - struct_size;
+	unsigned int block_bits = 6;
 	unsigned int block_zbits = block_bits / 3 + (block_bits % 3 > 0);
 	unsigned int block_ybits = block_bits / 3 + (block_bits % 3 > 1);
 	unsigned int block_xbits = block_bits / 3;
@@ -94,7 +94,7 @@ void SPGridMask::Cal_elemMask() {
 }
 
 unsigned int SPGridMask::getElement_per_Block() {
-	unsigned int block_bits = 12 - struct_size;
+	unsigned int block_bits = 6;
 	return 1u << block_bits;
 }
 
@@ -122,5 +122,9 @@ void SPGridMask::Cal_Masks() {
 	mask_x = pageMask_x | elementMask_x;
 	mask_y = pageMask_y | elementMask_y;
 	mask_z = pageMask_z | elementMask_z;
+
+    std::cout << "mask_x: " << std::bitset<64>(mask_x) << std::endl;
+    std::cout << "mask_y: " << std::bitset<64>(mask_y) << std::endl;
+    std::cout << "mask_z: " << std::bitset<64>(mask_z) << std::endl;
 }
 

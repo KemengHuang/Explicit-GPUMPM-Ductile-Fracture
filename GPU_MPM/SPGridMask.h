@@ -2,8 +2,8 @@
 class SPGridMask {
 public:
 	SPGridMask(unsigned long long strc_s, unsigned long long elem_s) {
-		struct_size = strc_s;
-		element_size = elem_s;
+		struct_size = 6;
+		element_size = 2;
 	}
 	~SPGridMask() {};
 	static unsigned long long Linear_Offset(unsigned long long* mask, const int i, const int j, const int k);

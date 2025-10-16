@@ -438,8 +438,8 @@ void Particles::getMaxParticleVel_c(T* maxVelSqared) {
 void Particles::initialize_kernal(const T* h_mass, const vector3T* h_pos, vector3T* h_vel) {
 
     //CUDA_SAFE_CALL(cudaMemset(d_phase_C, 1.f, sizeof(unsigned long long) * _numParticle));
-    CUDA_SAFE_CALL(cudaMemcpy(d_mass, h_mass, sizeof(T) * _numParticle, cudaMemcpyHostToDevice));	// or use thrust::copy
-    CUDA_SAFE_CALL(cudaMemcpy(d_pos, h_pos, sizeof(vector3T) * _numParticle, cudaMemcpyHostToDevice));	// or use thrust::copy
+    CUDA_SAFE_CALL(cudaMemcpy(d_mass, h_mass, sizeof(T) * _numParticle, cudaMemcpyHostToDevice));	
+    CUDA_SAFE_CALL(cudaMemcpy(d_pos, h_pos, sizeof(vector3T) * _numParticle, cudaMemcpyHostToDevice));	
 
     // calculate offsets
     const unsigned int threadNum = 256;

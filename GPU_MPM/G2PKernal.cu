@@ -4,7 +4,20 @@
 #define LOG_NUM_BANKS	 4
 #define CONFLICT_FREE_OFFSET(index) ((index) >> LOG_NUM_BANKS)
 
-__device__ void matrixMatrixMultiplication(const T* a, const T* b, T* c)
+__device__ void matrixMatrixMultiplication(const float* a, const float* b, float* c)
+{
+    c[0] = a[0] * b[0] + a[3] * b[1] + a[6] * b[2];
+    c[1] = a[1] * b[0] + a[4] * b[1] + a[7] * b[2];
+    c[2] = a[2] * b[0] + a[5] * b[1] + a[8] * b[2];
+    c[3] = a[0] * b[3] + a[3] * b[4] + a[6] * b[5];
+    c[4] = a[1] * b[3] + a[4] * b[4] + a[7] * b[5];
+    c[5] = a[2] * b[3] + a[5] * b[4] + a[8] * b[5];
+    c[6] = a[0] * b[6] + a[3] * b[7] + a[6] * b[8];
+    c[7] = a[1] * b[6] + a[4] * b[7] + a[7] * b[8];
+    c[8] = a[2] * b[6] + a[5] * b[7] + a[8] * b[8];
+}
+
+__device__ void matrixMatrixMultiplication(const double* a, const double* b, double* c)
 {
     c[0] = a[0] * b[0] + a[3] * b[1] + a[6] * b[2];
     c[1] = a[1] * b[0] + a[4] * b[1] + a[7] * b[2];
@@ -227,9 +240,9 @@ __global__ void G2P_APIC(
     // vel
     for (int v = 0; v < 3; ++v)
         buffer[v][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] =
-        *((T*)((unsigned long long)d_channels[1 + v] + (int)page_idx * 4096) + (ci * 16 + cj * 4 + ck));
+        *((T*)((unsigned long long)d_channels[1 + v] + (int)page_idx * 8192) + (ci * 16 + cj * 4 + ck));
     buffer[3][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] =
-        *((T*)((unsigned long long)d_channels[7] + (int)page_idx * 4096) + (ci * 16 + cj * 4 + ck));
+        *((T*)((unsigned long long)d_channels[7] + (int)page_idx * 8192) + (ci * 16 + cj * 4 + ck));
 
     __syncthreads();
 
@@ -279,7 +292,7 @@ __global__ void G2P_APIC(
 
 
 		int c = 0;
-		T tmp[27];
+        float tmp[27];
 		for (int i = 0; i < 3; ++i) {
 			for (int j = 0; j < 3; ++j) {
 				for (int k = 0; k < 3; ++k) {
@@ -326,10 +339,10 @@ __global__ void G2P_APIC(
         //d_sorted_positions[parid].z += d_sorted_velocities[parid_trans].z * dt;
 
 
-		T norms = sqrt(val[0] * val[0] + val[1] * val[1] + val[2] * val[2]);
+        T norms = sqrt(val[0] * val[0] + val[1] * val[1] + val[2] * val[2]);
 		if (norms > 11.137f) {
 			for (int i = 0; i < 3; i++) {
-				T vi = val[i];
+                T vi = val[i];
 				
 				val[i] = vi / norms * 11.137f;
 

@@ -545,7 +545,7 @@ __global__ void P2G_APIC(
     __syncthreads();
 
     int smallest_node[3];
-    
+
     if (relParid < d_block_offsets[pageid + 1] - d_block_offsets[pageid]) {
         T wOneD[3][3], wgOneD[3][3];
 
@@ -553,13 +553,13 @@ __global__ void P2G_APIC(
         smallest_node[1] = smallest_nodes[cellid].y;
         smallest_node[2] = smallest_nodes[cellid].z;
 
-        T sig[9];
+        float sig[9];
         int parid_trans = d_indexTrans[parid];
         sig[0] = d_sigma[parid_trans + (0) * numParticle]; sig[1] = d_sigma[parid_trans + (1) * numParticle]; sig[2] = d_sigma[parid_trans + (2) * numParticle];
         sig[3] = d_sigma[parid_trans + (3) * numParticle]; sig[4] = d_sigma[parid_trans + (4) * numParticle]; sig[5] = d_sigma[parid_trans + (5) * numParticle];
         sig[6] = d_sigma[parid_trans + (6) * numParticle]; sig[7] = d_sigma[parid_trans + (7) * numParticle]; sig[8] = d_sigma[parid_trans + (8) * numParticle];
 
-        T B[9];
+        float B[9];
         B[0] = d_B[parid_trans + 0 * numParticle]; B[1] = d_B[parid_trans + 1 * numParticle]; B[2] = d_B[parid_trans + 2 * numParticle];
         B[3] = d_B[parid_trans + 3 * numParticle]; B[4] = d_B[parid_trans + 4 * numParticle]; B[5] = d_B[parid_trans + 5 * numParticle];
         B[6] = d_B[parid_trans + 6 * numParticle]; B[7] = d_B[parid_trans + 7 * numParticle]; B[8] = d_B[parid_trans + 8 * numParticle];
@@ -606,32 +606,33 @@ __global__ void P2G_APIC(
         T mass = d_sorted_masses[d_indices[parid]];
         T C = d_sorted_C[parid_trans];
 
-		T val[10]; //for (int i = 0; i < 10; i++) val[i] = 0.f;
-		T wg[3];
-		T xi_minus_xp[3];
-		T tmp[10] ;
-		T weight;
+        float val[10];// for (int i = 0; i < 10; i++) val[i] = 0.;
+        T wg[3];
+        T xi_minus_xp[3];
+        T tmp[10];
+        T weight;
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {
                 for (int k = 0; k < 3; ++k) {
 
-					weight = wOneD[0][i] * wOneD[1][j] * wOneD[2][k];
+                    weight = wOneD[0][i] * wOneD[1][j] * wOneD[2][k];
                     wg[0] = wgOneD[0][i] * wOneD[1][j] * wOneD[2][k];
                     wg[1] = wOneD[0][i] * wgOneD[1][j] * wOneD[2][k];
                     wg[2] = wOneD[0][i] * wOneD[1][j] * wgOneD[2][k];
-					
+
                     val[0] = mass * weight;
                     val[4] = -(sig[0] * wg[0] + sig[3] * wg[1] + sig[6] * wg[2]);
                     val[5] = -(sig[1] * wg[0] + sig[4] * wg[1] + sig[7] * wg[2]);
                     val[6] = -(sig[2] * wg[0] + sig[5] * wg[1] + sig[8] * wg[2]);
                     val[7] = weight * C;
                     val[8] = weight;
-					val[9] = 0.01f;// wOneD[0][i] * wOneD[1][j] * wOneD[2][k];
+                    val[9] = 0.01f;// wOneD[0][i] * wOneD[1][j] * wOneD[2][k];
 
-                    
+
                     xi_minus_xp[0] = i * dx - xp[0];
                     xi_minus_xp[1] = j * dx - xp[1];
                     xi_minus_xp[2] = k * dx - xp[2];
+
 
                     val[1] = vel[0];
                     val[2] = vel[1];
@@ -645,14 +646,14 @@ __global__ void P2G_APIC(
 
                     //volatile T* vol_sh_max = sha_partialMax2
 
-					//for (int i = 0; i < 10; i++) {
-					//	for (int iter = 1; iter <= mark; iter <<= 1) {
-					//		tmp = __shfl_down_sync(__activemask(), val[i], iter);
-					//		if (interval >= iter) {
-					//			val[i] += tmp;
-					//		}
-					//	}
-					//}
+                    //for (int i = 0; i < 10; i++) {
+                    //	for (int iter = 1; iter <= mark; iter <<= 1) {
+                    //		tmp = __shfl_down_sync(__activemask(), val[i], iter);
+                    //		if (interval >= iter) {
+                    //			val[i] += tmp;
+                    //		}
+                    //	}
+                    //}
 
 
                     for (int iter = 1; iter <= mark; iter <<= 1) {
@@ -683,7 +684,7 @@ __global__ void P2G_APIC(
 
     for (int ii = 0; ii < 10; ++ii)
         if (buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-            atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 4096) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+            atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
 }
 
 

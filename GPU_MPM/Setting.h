@@ -2,9 +2,9 @@
 
 
 using T = double;
-constexpr const T rateSize = 2.f;
+constexpr const T rateSize = 2;
 constexpr const unsigned int N = 128 * rateSize;
-constexpr const T dx = 1.f / N;
+constexpr const T dx = 1.0 / N;
 constexpr const T DX = dx;// *rateSize;
 constexpr const T one_over_dx = N;
 constexpr const T D_inverse = 4.f * one_over_dx * one_over_dx;
@@ -12,7 +12,7 @@ constexpr const unsigned int space_page_num = (N / 4 + 2) * (N / 4 + 2) * (N / 4
 constexpr int Dim = 3;
 constexpr int pretype_threshold = 2500000;
 
-constexpr const T MEMORY_SCALE = 0.1f;
+constexpr const T MEMORY_SCALE = 0.3f;
 // 0: explicit 1: implicit
 #define MPM_SIM_TYPE 0
 

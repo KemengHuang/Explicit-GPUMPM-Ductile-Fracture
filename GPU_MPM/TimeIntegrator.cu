@@ -64,44 +64,46 @@ __global__ void undateGrid_kernal(const T dt, T** d_channels) {
     int idx = blockIdx.x;
     
     int cellid = (threadIdx.x);
-    T tag = *((T*)((unsigned long long)d_channels[9] + idx * 4096) + cellid);
+    T tag = *((T*)((unsigned long long)d_channels[9] + idx * 8192) + cellid);
+    //printf("tag£»  %f\n", tag);
     if (tag > 0.000001f)
     {
-		T mass = *((T*)((unsigned long long)d_channels[0] + idx * 4096) + cellid);
-        T C = *((T*)((unsigned long long)d_channels[7] + idx * 4096) + cellid);
-        T W = *((T*)((unsigned long long)d_channels[8] + idx * 4096) + cellid);
-        //*((T*)((unsigned long long)d_channels[8] + idx * 4096) + cellid) = 0;
+		T mass = *((T*)((unsigned long long)d_channels[0] + idx * 8192) + cellid);
+        T C = *((T*)((unsigned long long)d_channels[7] + idx * 8192) + cellid);
+        //printf("C:  %f\n", C);
+        T W = *((T*)((unsigned long long)d_channels[8] + idx * 8192) + cellid);
+        //*((T*)((unsigned long long)d_channels[8] + idx * 8192) + cellid) = 0;
 		//if (abs(W) < (T)1e-20) {
 		//	//mass = 0;
-		//	*((T*)((unsigned long long)d_channels[7] + idx * 4096) + cellid) = 0.f;
-		//	*((T*)((unsigned long long)d_channels[9] + idx * 4096) + cellid) = 0.f;
+		//	*((T*)((unsigned long long)d_channels[7] + idx * 8192) + cellid) = 0.f;
+		//	*((T*)((unsigned long long)d_channels[9] + idx * 8192) + cellid) = 0.f;
 		//}
 		//else {
-		//	*((T*)((unsigned long long)d_channels[7] + idx * 4096) + cellid) = C / W;
+		//	*((T*)((unsigned long long)d_channels[7] + idx * 8192) + cellid) = C / W;
 		//	//mass = 1.f / mass;
 		//}
 		if (abs(mass) < (T)1e-32) {
-            *((T*)((unsigned long long)d_channels[7] + idx * 4096) + cellid) = 0.f;
-            *((T*)((unsigned long long)d_channels[9] + idx * 4096) + cellid) = 0.f;
+            *((T*)((unsigned long long)d_channels[7] + idx * 8192) + cellid) = 0.f;
+            *((T*)((unsigned long long)d_channels[9] + idx * 8192) + cellid) = 0.f;
 			mass = 0;
 		}
 		else {
 			mass = 1.f / mass;
-            *((T*)((unsigned long long)d_channels[7] + idx * 4096) + cellid) = __fdividef(C, W);
+            *((T*)((unsigned long long)d_channels[7] + idx * 8192) + cellid) = __fdividef(C, W);
 		}
 		//mass = 1.f / mass;
         //for (int i = 0; i < 3; ++i)
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cellid) *= mass;
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cellid) *= mass;
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cellid) *= mass;
-        //if (*((T*)((unsigned long long)d_channels[0] + idx * 4096) + cellid) != 0)
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cellid) +=  -1.0f * dt;
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cellid) *= mass;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cellid) *= mass;
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cellid) *= mass;
+        //if (*((T*)((unsigned long long)d_channels[0] + idx * 8192) + cellid) != 0)
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cellid) +=  -1.0f * dt;
         mass = dt * mass;
         for (int i = 0; i < Dim; i++) {
-            T test = *((T*)((unsigned long long)d_channels[i + 4] + idx * 4096) + cellid) * mass;
+            T test = *((T*)((unsigned long long)d_channels[i + 4] + idx * 8192) + cellid) * mass;
 
             if (!isnan(test) && !isinf(test)) {
-                *((T*)((unsigned long long)d_channels[i + 1] + idx * 4096) + cellid) += test;
+                *((T*)((unsigned long long)d_channels[i + 1] + idx * 8192) + cellid) += test;
             }
         }
 
@@ -130,35 +132,35 @@ void collideWithGround(unsigned long long* masks,
     int k = Bit_Pack_Mine(masks[2], pageOffsets[idx]) + ck;
 
     // sticky
-    if (i <= 4) if (*((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) < 0.f) {
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
+    if (i <= 4) if (*((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) < 0.f) {
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
     }
-    if (i > N - 4) if (*((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) > 0.f) {
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
+    if (i > N - 4) if (*((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) > 0.f) {
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
     }
-    if (j <= 4) if (*((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) < 0.f) {
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
+    if (j <= 4) if (*((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) < 0.f) {
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
     }
-    if (j > N - 4) if (*((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) > 0.f) {
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
+    if (j > N - 4) if (*((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) > 0.f) {
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
     }
-    if (k <= 4) if (*((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) < 0.f) {
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
+    if (k <= 4) if (*((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) < 0.f) {
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
     }
-    if (k > N - 4) if (*((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) > 0.f) {
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
+    if (k > N - 4) if (*((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) > 0.f) {
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
     }
 }
 
@@ -212,48 +214,48 @@ void PullGrid_kernal(unsigned long long* masks,
     T disR = (nodeX - right.x) * (nodeX - right.x) + (nodeY - right.y) * (nodeY - right.y) + (nodeZ - right.z) * (nodeZ - right.z);
     T range = L * L;
     if (disL < range) {
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = -vv;
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = -vv;
     }
     if (disR < range) {
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = vv;
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = vv;
     }
 
-    if (i <= 4) if (*((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) < 0.f) {
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
+    if (i <= 4) if (*((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) < 0.f) {
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
     }
-    if (i > N - 4) if (*((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) > 0.f) {
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
+    if (i > N - 4) if (*((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) > 0.f) {
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
     }
-	T* vY = ((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell);
+	T* vY = ((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell);
     if (j <= 4) if (*vY < 0.f) {
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
 		//*vY = (*vY) * -0.2f;
     }
     if (j > N - 4) if (*vY > 0.f) {
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
 		//*vY = (*vY) * -0.2f;
     }
-    if (k <= 4) if (*((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) < 0.f) {
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
+    if (k <= 4) if (*((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) < 0.f) {
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
     }
-    if (k > N - 4) if (*((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) > 0.f) {
-        *((T*)((unsigned long long)d_channels[3] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[1] + idx * 4096) + cell) = 0.f;
-        *((T*)((unsigned long long)d_channels[2] + idx * 4096) + cell) = 0.f;
+    if (k > N - 4) if (*((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) > 0.f) {
+        *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[1] + idx * 8192) + cell) = 0.f;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cell) = 0.f;
     }
 
 }
@@ -262,8 +264,8 @@ void PullGrid_kernal(unsigned long long* masks,
 //    int idx = blockIdx.x;
 //    int cellid = threadIdx.x;
 //    for (int i = 0; i < Dim; i++) {
-//        *((T*)((unsigned long long)d_channels[i + 7] + idx * 4096) + cellid) = *((T*)((unsigned long long)d_channels[i + 1] + idx * 4096) + cellid)
-//            - *((T*)((unsigned long long)d_channels[i + 7] + idx * 4096) + cellid);
+//        *((T*)((unsigned long long)d_channels[i + 7] + idx * 8192) + cellid) = *((T*)((unsigned long long)d_channels[i + 1] + idx * 8192) + cellid)
+//            - *((T*)((unsigned long long)d_channels[i + 7] + idx * 8192) + cellid);
 //    }
 //}
 
