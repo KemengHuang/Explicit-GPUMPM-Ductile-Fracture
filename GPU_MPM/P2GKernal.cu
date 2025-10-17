@@ -151,7 +151,7 @@ __global__ void P2G_MLS(
 
     for (int ii = 0; ii < 7; ++ii)
         if (buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-            atomicAdd((T*)((unsigned long long)d_channels[ii+(ii/4)*3] + page_idx * 4096) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+            atomicAdd((T*)((unsigned long long)d_channels[ii+(ii/4)*3] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
 }
 
 __global__ void P2G_APIC_CONFLICT_FREE(
@@ -333,7 +333,7 @@ __global__ void P2G_APIC_CONFLICT_FREE(
             int sdid = ii * 216 + aa * 36 + bb * 6 + cc;
             T datatemp = buffer[sdid + CONFLICT_FREE_OFFSET(sdid)];
             if (datatemp != 0)
-                atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 4096) + (ci * 16 + cj * 4 + ck), datatemp);
+                atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), datatemp);
         }
     }
 }
@@ -488,7 +488,7 @@ __global__ void P2G_APIC_CONFLICT_FREE(
 //
 //    for (int ii = 0; ii < 7; ++ii)
 //        if (buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-//            atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 4096) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+//            atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
 //
 //}
 
@@ -728,7 +728,7 @@ __global__ void volP2G_APIC(
             *((&buffer[0][0][0][0]) + blockDim.x * i + threadIdx.x) = (T)0;
     
     buffer[1][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] =
-        *((T*)((unsigned long long)d_channels[7] + (int)page_idx * 4096) + (ci * 16 + cj * 4 + ck));
+        *((T*)((unsigned long long)d_channels[7] + (int)page_idx * 8192) + (ci * 16 + cj * 4 + ck));
 
     __syncthreads();
 
@@ -815,7 +815,7 @@ __global__ void volP2G_APIC(
 
     
     if (buffer[0][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-        atomicAdd((T*)((unsigned long long)d_channels[10] + page_idx * 4096) + (ci * 16 + cj * 4 + ck), buffer[0][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+        atomicAdd((T*)((unsigned long long)d_channels[10] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), buffer[0][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
 }
 
 __global__ void preConditionP2G_APIC(
@@ -937,7 +937,7 @@ __global__ void preConditionP2G_APIC(
     int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
 
     if (buffer[bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-        atomicAdd((T*)((unsigned long long)d_channels[11] + page_idx * 4096) + (ci * 16 + cj * 4 + ck), buffer[bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+        atomicAdd((T*)((unsigned long long)d_channels[11] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), buffer[bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
 }
 
 
@@ -1082,7 +1082,7 @@ __global__ void AxP2G_APIC(
 
                     g_x = buffer[1][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k];
 
-                    val = g_x * (p_vol * wOneD[0][i] * wOneD[1][j] * wOneD[2][k] * (p_fp * parabolic_M + 1.f / dt) + HW * parabolic_M);
+                    val = g_x * p_vol * wOneD[0][i] * wOneD[1][j] * wOneD[2][k] * (p_fp * parabolic_M + 1.f / dt) + HW * parabolic_M;
                     //volatile T* vol_sh_max = sha_partialMax2
                     for (int iter = 1; iter <= mark; iter <<= 1) {
                         tmp = __shfl_down_sync(__activemask(), val, iter);

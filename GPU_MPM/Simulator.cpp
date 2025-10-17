@@ -83,7 +83,7 @@ bool MPMSimulator::build(unsigned int buildtype) {
     T dtDefault;
 
     unsigned int materialType = 1;   // 0 neohookean 1 fixed corotated
-    T youngsModulus = 2000.f;
+    T youngsModulus = 3000.f;
     T poissonRatio = 0.4;
     T density = rateSize*rateSize*rateSize*3.f;
     T totalVolume = 1.f;
@@ -111,6 +111,9 @@ bool MPMSimulator::build(unsigned int buildtype) {
     }
     else if (buildtype == 1) {
         int geometryType = 7;
+        youngsModulus = 2e2;
+        poissonRatio = 0.4;
+        density = 3;
 		tableSize = 36000 * rateSize * rateSize * rateSize * MEMORY_SCALE;
         srand(0);
         // position
@@ -176,11 +179,11 @@ bool MPMSimulator::build(unsigned int buildtype) {
         for (int i = 0; i < numParticle; i++) {
             if (tmp[i].z > 0.5) {
                 h_pos[cubeIndex] = tmp[i];
-                h_vel[cubeIndex++].z = -0.5;
+                h_vel[cubeIndex++].z = -1.5;
             }
             else {
                 h_pos[baseIndex] = tmp[i];
-                h_vel[baseIndex++].z = +0.5;
+                h_vel[baseIndex++].z = +1.5;
             }
         }
         tmp.clear();

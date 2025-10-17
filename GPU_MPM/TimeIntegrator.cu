@@ -82,12 +82,12 @@ __global__ void undateGrid_kernal(const T dt, T** d_channels) {
 		//	*((T*)((unsigned long long)d_channels[7] + idx * 8192) + cellid) = C / W;
 		//	//mass = 1.f / mass;
 		//}
-		if (abs(mass) < (T)1e-32) {
+/*		if (abs(mass) < (T)1e-32) {
             *((T*)((unsigned long long)d_channels[7] + idx * 8192) + cellid) = 0.f;
             *((T*)((unsigned long long)d_channels[9] + idx * 8192) + cellid) = 0.f;
 			mass = 0;
 		}
-		else {
+		else */{
 			mass = 1.f / mass;
             *((T*)((unsigned long long)d_channels[7] + idx * 8192) + cellid) = __fdividef(C, W);
 		}
@@ -97,7 +97,7 @@ __global__ void undateGrid_kernal(const T dt, T** d_channels) {
         *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cellid) *= mass;
         *((T*)((unsigned long long)d_channels[3] + idx * 8192) + cellid) *= mass;
         //if (*((T*)((unsigned long long)d_channels[0] + idx * 8192) + cellid) != 0)
-        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cellid) +=  -1.0f * dt;
+        *((T*)((unsigned long long)d_channels[2] + idx * 8192) + cellid) +=  -10 * dt;
         mass = dt * mass;
         for (int i = 0; i < Dim; i++) {
             T test = *((T*)((unsigned long long)d_channels[i + 4] + idx * 8192) + cellid) * mass;

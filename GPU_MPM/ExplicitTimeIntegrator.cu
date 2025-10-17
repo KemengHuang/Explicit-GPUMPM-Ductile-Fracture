@@ -192,7 +192,7 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
     T y = tau_tr_F - g * R(alpha, yield_stress, harden) * sqrt(parameter1);
 
     double alpha_c = 1;
-    if (true && y >= (T)1e-6)
+    if (true && y >= (T)1e-12)
     {
         T tau_tr_trace = tau_tr[0] + tau_tr[1] + tau_tr[2];
         T dlambda_init = 0.001;
@@ -202,11 +202,11 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
             dlambda = 0;
         }
 
-        if (abs(tau_tr_sum) < 1e-4)
-        {
-            dlambda = 100.f;
-        }
-        else
+        //if (abs(tau_tr_sum) < 1e-4)
+        //{
+        //    dlambda = 100.f;
+        //}
+        //else
         {
             T bss = (parameter1 * g * tau_tr_sum);
             if (bss > 0.f) {
@@ -233,10 +233,10 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
      
         tau_dev_tr_norm = sqrt(tau_normal);
 
-        if (abs(tau_dev_tr_norm) < 1e-2)
-        {
-            tau_dev_tr_norm = 0.01f;
-        }
+        //if (abs(tau_dev_tr_norm) < 1e-2)
+        //{
+        //    tau_dev_tr_norm = 0.01f;
+        //}
 
         T tau_dev_nn[3];
         T taudiv = (1.f / tau_dev_tr_norm) * parameter1 * g * tau_tr_sum * dlambda;
@@ -317,7 +317,7 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
     {
         d_maxPsi[parid] = Psi_pos;
     }
-    T G_c_0 = 20.f;
+    T G_c_0 = 3.f;
     T p = alpha / 2;
     T G_C;
     double ps = 0.01;
@@ -331,9 +331,9 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
         G_C = G_c_0 * (((1.f - residual_c) * exp(ps - p)) + residual_c);
     }
 
-    float theta = 0.001f;
+    float theta = 0.0001f;
     T L0 = dx * 0.5;
-    float beta = 15;
+    //float beta = 15;
 
     FP[parid] = 4 * L0 * (1 - theta) * d_maxPsi[parid] * (1.f / G_C) + 1.f;
 
@@ -382,9 +382,9 @@ __global__ void computeContributionNeoHookean(T dx, T* FP, const int numParticle
 
     __GEIGEN__::math::msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
 
-    if (S[0] < 0.0001f)S[0] = 0.0001f;
-    if (S[1] < 0.0001f)S[1] = 0.0001f;
-    if (S[2] < 0.0001f)S[2] = 0.0001f;
+    //if (S[0] < 0.0001f)S[0] = 0.0001f;
+    //if (S[1] < 0.0001f)S[1] = 0.0001f;
+    //if (S[2] < 0.0001f)S[2] = 0.0001f;
 
     //
     T be_bar[3];
@@ -415,7 +415,7 @@ __global__ void computeContributionNeoHookean(T dx, T* FP, const int numParticle
         d_maxPsi[parid] = Psi_pos;
     }
     T G_C = 3;
-    T L0 = dx;
+    T L0 = 0.5*dx;
 	FP[parid] = 4 * L0 * (1.f - 0.001f) * d_maxPsi[parid] * 1.f / G_C + 1.f;
     // 2. compute tau
     T tau_vol[3];
@@ -448,12 +448,12 @@ __global__ void computeContributionNeoHookean(T dx, T* FP, const int numParticle
 //#if TRANSFER_SCHEME != 2
 //    int idx = blockIdx.x;
 //    int cellid = threadIdx.x;
-//    T mass = *((T*)((unsigned long long)d_channels[0] + idx * 4096) + cellid);
+//    T mass = *((T*)((unsigned long long)d_channels[0] + idx * 8192) + cellid);
 //    if (mass != 0.f)
 //    {
 //        mass = dt / mass;
 //        for (int i = 0; i < Dim; i++) {
-//            *((T*)((unsigned long long)d_channels[i + 1] + idx * 4096) + cellid) += *((T*)((unsigned long long)d_channels[i + 4] + idx * 4096) + cellid) * mass;
+//            *((T*)((unsigned long long)d_channels[i + 1] + idx * 8192) + cellid) += *((T*)((unsigned long long)d_channels[i + 4] + idx * 8192) + cellid) * mass;
 //        }
 //    }
 //#endif
@@ -612,10 +612,10 @@ __global__ void transGrid_to_vector_kernal(T** d_channels, T* grid_r, int id) {
     int idx = blockIdx.x;
 
     int cellid = (threadIdx.x);
-    T tr = *((T*)((unsigned long long)d_channels[9] + idx * 4096) + cellid);
+    T tr = *((T*)((unsigned long long)d_channels[9] + idx * 8192) + cellid);
     if (tr > 0.f)
     {
-        T a = *((T*)((unsigned long long)d_channels[id] + idx * 4096) + cellid);
+        T a = *((T*)((unsigned long long)d_channels[id] + idx * 8192) + cellid);
         grid_r[idx * 64 + cellid] = a;
     }
 }
@@ -623,7 +623,7 @@ __global__ void transGrid_to_vector_kernal(T** d_channels, T* grid_r, int id) {
 __global__ void cal_grid_r_vad_kernal(T** d_channel, T rate, T* in, T* out) {
 	int idx = blockIdx.x;
 	int cellid = (threadIdx.x);
-	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 4096) + cellid);
+	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 8192) + cellid);
 	if (tr > 0.f)
 		out[idx * 64 + cellid] = out[idx * 64 + cellid] * rate + in[idx * 64 + cellid];
 
@@ -633,11 +633,11 @@ __global__ void update_grid_phase(T** d_channel, T* x) {
     int idx = blockIdx.x;
 
     int cellid = (threadIdx.x);
-	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 4096) + cellid);
+	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 8192) + cellid);
 	if (tr > 0.f)
     {
-        T g_c = *((T*)((unsigned long long)d_channel[7] + idx * 4096) + cellid);
-        *((T*)((unsigned long long)d_channel[7] + idx * 4096) + cellid) = x[idx * 64 + cellid] - g_c;
+        T g_c = *((T*)((unsigned long long)d_channel[7] + idx * 8192) + cellid);
+        *((T*)((unsigned long long)d_channel[7] + idx * 8192) + cellid) = x[idx * 64 + cellid] - g_c;
     }
 }
 
@@ -645,7 +645,7 @@ __global__ void cal_grid_l_vad_kernal(T** d_channel, T rate, T* in, T* out) {
 	int idx = blockIdx.x;
 
 	int cellid = (threadIdx.x);
-	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 4096) + cellid);
+	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 8192) + cellid);
 	if (tr > 0.f)
 		out[idx * 64 + cellid] += in[idx * 64 + cellid] * rate;
 
@@ -655,7 +655,7 @@ __global__ void cal_grid_l_sub2Zero_kernal(T** d_channel, T rate, T* in, T* out)
 	int idx = blockIdx.x;
 
 	int cellid = (threadIdx.x);
-	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 4096) + cellid);
+	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 8192) + cellid);
 	if (tr > 0.f) {
 		T a = out[idx * 64 + cellid] - in[idx * 64 + cellid] * rate;
 		out[idx * 64 + cellid] = a;// > 0.f ? a : 0.f;
@@ -674,11 +674,11 @@ __global__ void precondition_subd(T** d_channels, T* grid_r, T* grid_mr) {
     int idx = blockIdx.x;
 
     int cellid = (threadIdx.x);
-    T tag = *((T*)((unsigned long long)d_channels[9] + idx * 4096) + cellid);
+    T tag = *((T*)((unsigned long long)d_channels[9] + idx * 8192) + cellid);
     if (tag > 0.f)
     {
-        T mr = *((T*)((unsigned long long)d_channels[11] + idx * 4096) + cellid);
-        *((T*)((unsigned long long)d_channels[11] + idx * 4096) + cellid) = 0.f;
+        T mr = *((T*)((unsigned long long)d_channels[11] + idx * 8192) + cellid);
+        *((T*)((unsigned long long)d_channels[11] + idx * 8192) + cellid) = 0.f;
 		/*if ((mr < (T)1e-36) && (mr >= 0.f)) {
 			mr = (T)1e-36;
 		}
@@ -896,8 +896,9 @@ void ExplicitTimeIntegrator::integrate(int type, float* simulationTime, float* p
     computeCellIndex(trans, particles);
     computeForceCoefficient(model);
     transferP2G(dt, particles, grid, trans);
+    CUDA_SAFE_CALL(cudaDeviceSynchronize());
     undateGrid(dt, grid, trans);
-
+    CUDA_SAFE_CALL(cudaDeviceSynchronize());
     bool update_phase_field = true;
 
 #if (Energy_Model == 0)
@@ -964,7 +965,8 @@ void ExplicitTimeIntegrator::integrate(int type, float* simulationTime, float* p
 
         }
         update_grid_phase << < trans->_numTotalPage, 64 >> > (grid->d_channels, grid->d_grid_x);
-        PullGrid(grid, trans, totalT);
+        //PullGrid(grid, trans, totalT);
+        resolveCollision(grid, trans);
         totalT += dt;
     }
     else {
