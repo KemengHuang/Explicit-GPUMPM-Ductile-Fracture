@@ -15,14 +15,15 @@ void SPGrid::SPGrid_MEM_Malloc() {
     _memoryScale = MEMORY_SCALE;
     unsigned long long int nodeSize = _width * _height * _depth;
     unsigned long long int tmp = sizeof(CH_STRUCT) * nodeSize * _memoryScale;
+    unsigned long long int tmpT = sizeof(T) * nodeSize * _memoryScale;
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid, tmp)); // more secured way should be used
    
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_temp, sizeof(T) * nodeSize * _memoryScale));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_r, sizeof(T) * nodeSize * _memoryScale));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_mr, sizeof(T) * nodeSize * _memoryScale));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_s, sizeof(T) * nodeSize * _memoryScale));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_q, sizeof(T) * nodeSize * _memoryScale));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_x, sizeof(T) * nodeSize * _memoryScale));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_temp, tmpT));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_r, tmpT));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_mr, tmpT));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_s, tmpT));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_q, tmpT));
+    CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_x, tmpT));
 	CUDA_SAFE_CALL(cudaMalloc((void**)&innerProductR, sizeof(T)));
 	CUDA_SAFE_CALL(cudaMalloc((void**)&_maxVel, sizeof(T)));
 
