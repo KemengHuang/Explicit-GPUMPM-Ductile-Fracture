@@ -119,7 +119,9 @@ void init()
 	real_world_origin.x = 0; real_world_origin.y = 0; real_world_origin.z = 0;
 	real_world_side.x = 1; real_world_side.y = 1; real_world_side.z = 1;
 	
-	particle_texture_.loadPNG("ball32.png");
+	auto assets_path = std::string{ gmpm_ASSETS_DIR };
+	assets_path = assets_path + "sample/ball32.png";
+	particle_texture_.loadPNG(assets_path.c_str());
 	glGenBuffers(1, &position_vbo_);
 	glGenBuffers(1, &color_vbo_);
 }
