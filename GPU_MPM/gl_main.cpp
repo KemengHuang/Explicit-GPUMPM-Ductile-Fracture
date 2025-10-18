@@ -5,7 +5,7 @@
 #include<fstream>
 #include"Simulator.h"
 #include "cuda_runtime.h"
-//#include<iostream>
+#include "gl_texture.h"
 MPMSimulator simulatorMPM;
 
 int framest = 0;
@@ -92,7 +92,9 @@ void init_mpm_system()
 	simulatorMPM.build(typem);
 	//simulatorMPM.simulateStick(&dt);
 }
-
+GLuint position_vbo_;
+GLuint color_vbo_;
+PNGTexture particle_texture_;
 void init()
 {
 	init_cuda();
@@ -116,8 +118,10 @@ void init()
 
 	real_world_origin.x = 0; real_world_origin.y = 0; real_world_origin.z = 0;
 	real_world_side.x = 1; real_world_side.y = 1; real_world_side.z = 1;
-	//PNGTexture particle_texture_;
-	//particle_texture_.loadPNG("ball32.png");
+	
+	particle_texture_.loadPNG("ball32.png");
+	glGenBuffers(1, &position_vbo_);
+	glGenBuffers(1, &color_vbo_);
 }
 
 void init_ratio()
@@ -126,8 +130,7 @@ void init_ratio()
 }
 
 typedef unsigned int uint;
-GLuint position_vbo_;
-GLuint color_vbo_;
+
 std::vector<uint> color;
 void drawParticles(int step) {
 	glEnable(GL_BLEND);
@@ -148,20 +151,24 @@ void drawParticles(int step) {
 	glPointParameterfARB(GL_POINT_SIZE_MAX, 32);
 	glPointParameterfARB(GL_POINT_SIZE_MIN, 1.0f);
 
-
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, particle_texture_.get_texture());
+	glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	int nump_ = simulatorMPM.numParticle;
-	if (step == 0) {
-		glGenBuffers(1, &position_vbo_);
-		glGenBuffers(1, &color_vbo_);
-		//pos = new mFloat3[nump_];
-		//color = new uint[nump_];
-		/*for (unsigned int i = 0; i < nump_; ++i)
-		{
-			uint clo = (uint((1.0) * 255.0f) << 24) | (uint((0.7) * 255.0f) << 16) | (uint((0.55) * 255.0f) << 8) | uint((0.15) * 255.0f);
-			color.push_back(clo);
-		}*/
-	}
+	//if (step == 0) {
+	//	glGenBuffers(1, &position_vbo_);
+	//	glGenBuffers(1, &color_vbo_);
+	//	//pos = new mFloat3[nump_];
+	//	//color = new uint[nump_];
+	//	/*for (unsigned int i = 0; i < nump_; ++i)
+	//	{
+	//		uint clo = (uint((1.0) * 255.0f) << 24) | (uint((0.7) * 255.0f) << 16) | (uint((0.55) * 255.0f) << 8) | uint((0.15) * 255.0f);
+	//		color.push_back(clo);
+	//	}*/
+	//}
 	// Point buffers
 	glBindBuffer(GL_ARRAY_BUFFER, position_vbo_);
 	glBufferData(GL_ARRAY_BUFFER, nump_ * sizeof(vector3T), &(simulatorMPM.h_pos[0]), GL_DYNAMIC_DRAW);

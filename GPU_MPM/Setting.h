@@ -1,6 +1,6 @@
 #pragma once
 
-//#define DOUBLE_PRECISION
+#define DOUBLE_PRECISION
 #ifdef DOUBLE_PRECISION
 using T = double;
 #define MEMOFFSET 7680
