@@ -151,7 +151,7 @@ __global__ void P2G_MLS(
 
     for (int ii = 0; ii < 7; ++ii)
         if (buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-            atomicAdd((T*)((unsigned long long)d_channels[ii+(ii/4)*3] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+            atomicAdd((T*)((unsigned long long)d_channels[ii+(ii/4)*3] + page_idx * 7680) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
 }
 
 __global__ void P2G_APIC_CONFLICT_FREE(
@@ -333,7 +333,7 @@ __global__ void P2G_APIC_CONFLICT_FREE(
             int sdid = ii * 216 + aa * 36 + bb * 6 + cc;
             T datatemp = buffer[sdid + CONFLICT_FREE_OFFSET(sdid)];
             if (datatemp != 0)
-                atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), datatemp);
+                atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 7680) + (ci * 16 + cj * 4 + ck), datatemp);
         }
     }
 }
@@ -488,10 +488,26 @@ __global__ void P2G_APIC_CONFLICT_FREE(
 //
 //    for (int ii = 0; ii < 7; ++ii)
 //        if (buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-//            atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+//            atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 7680) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
 //
 //}
 
+
+__device__ __forceinline__
+void reduce_and_atomic_add(T& val,
+    T* dst,   
+    int mark,
+    int interval,
+    bool bBoundary)
+{
+    T tmp;
+    unsigned mask = __activemask();
+    for (int iter = 1; iter <= mark; iter <<= 1) {
+        tmp = __shfl_down_sync(mask, val, iter);
+        if (interval >= iter) val += tmp;
+    }
+    if (bBoundary) atomicAdd(dst, val);
+}
 
 __global__ void P2G_APIC(
     const int numParticle,
@@ -553,13 +569,13 @@ __global__ void P2G_APIC(
         smallest_node[1] = smallest_nodes[cellid].y;
         smallest_node[2] = smallest_nodes[cellid].z;
 
-        float sig[9];
+        T sig[9];
         int parid_trans = d_indexTrans[parid];
         sig[0] = d_sigma[parid_trans + (0) * numParticle]; sig[1] = d_sigma[parid_trans + (1) * numParticle]; sig[2] = d_sigma[parid_trans + (2) * numParticle];
         sig[3] = d_sigma[parid_trans + (3) * numParticle]; sig[4] = d_sigma[parid_trans + (4) * numParticle]; sig[5] = d_sigma[parid_trans + (5) * numParticle];
         sig[6] = d_sigma[parid_trans + (6) * numParticle]; sig[7] = d_sigma[parid_trans + (7) * numParticle]; sig[8] = d_sigma[parid_trans + (8) * numParticle];
 
-        float B[9];
+        T B[9];
         B[0] = d_B[parid_trans + 0 * numParticle]; B[1] = d_B[parid_trans + 1 * numParticle]; B[2] = d_B[parid_trans + 2 * numParticle];
         B[3] = d_B[parid_trans + 3 * numParticle]; B[4] = d_B[parid_trans + 4 * numParticle]; B[5] = d_B[parid_trans + 5 * numParticle];
         B[6] = d_B[parid_trans + 6 * numParticle]; B[7] = d_B[parid_trans + 7 * numParticle]; B[8] = d_B[parid_trans + 8 * numParticle];
@@ -606,10 +622,9 @@ __global__ void P2G_APIC(
         T mass = d_sorted_masses[d_indices[parid]];
         T C = d_sorted_C[parid_trans];
 
-        float val[10];// for (int i = 0; i < 10; i++) val[i] = 0.;
+        T val;
         T wg[3];
         T xi_minus_xp[3];
-        T tmp[10];
         T weight;
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {
@@ -620,50 +635,45 @@ __global__ void P2G_APIC(
                     wg[1] = wOneD[0][i] * wgOneD[1][j] * wOneD[2][k];
                     wg[2] = wOneD[0][i] * wOneD[1][j] * wgOneD[2][k];
 
-                    val[0] = mass * weight;
-                    val[4] = -(sig[0] * wg[0] + sig[3] * wg[1] + sig[6] * wg[2]);
-                    val[5] = -(sig[1] * wg[0] + sig[4] * wg[1] + sig[7] * wg[2]);
-                    val[6] = -(sig[2] * wg[0] + sig[5] * wg[1] + sig[8] * wg[2]);
-                    val[7] = weight * C;
-                    val[8] = weight;
-                    val[9] = 0.01f;// wOneD[0][i] * wOneD[1][j] * wOneD[2][k];
-
-
                     xi_minus_xp[0] = i * dx - xp[0];
                     xi_minus_xp[1] = j * dx - xp[1];
                     xi_minus_xp[2] = k * dx - xp[2];
 
+                    val = mass * weight;
+                    reduce_and_atomic_add(val, &(buffer[0][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]), mark, interval, bBoundary);
 
-                    val[1] = vel[0];
-                    val[2] = vel[1];
-                    val[3] = vel[2];
-                    val[1] += (B[0] * xi_minus_xp[0] + B[3] * xi_minus_xp[1] + B[6] * xi_minus_xp[2]);
-                    val[2] += (B[1] * xi_minus_xp[0] + B[4] * xi_minus_xp[1] + B[7] * xi_minus_xp[2]);
-                    val[3] += (B[2] * xi_minus_xp[0] + B[5] * xi_minus_xp[1] + B[8] * xi_minus_xp[2]);
-                    val[1] *= val[0];
-                    val[2] *= val[0];
-                    val[3] *= val[0];
+                    val = -(sig[0] * wg[0] + sig[3] * wg[1] + sig[6] * wg[2]);
+                    reduce_and_atomic_add(val, &(buffer[4][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]), mark, interval, bBoundary);
 
-                    //volatile T* vol_sh_max = sha_partialMax2
+                    val = -(sig[1] * wg[0] + sig[4] * wg[1] + sig[7] * wg[2]);
+                    reduce_and_atomic_add(val, &(buffer[5][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]), mark, interval, bBoundary);
 
-                    //for (int i = 0; i < 10; i++) {
-                    //	for (int iter = 1; iter <= mark; iter <<= 1) {
-                    //		tmp = __shfl_down_sync(__activemask(), val[i], iter);
-                    //		if (interval >= iter) {
-                    //			val[i] += tmp;
-                    //		}
-                    //	}
-                    //}
+                    val = -(sig[2] * wg[0] + sig[5] * wg[1] + sig[8] * wg[2]);
+                    reduce_and_atomic_add(val, &(buffer[6][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]), mark, interval, bBoundary);
 
+                    val = weight * C;
+                    reduce_and_atomic_add(val, &(buffer[7][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]), mark, interval, bBoundary);
 
-                    for (int iter = 1; iter <= mark; iter <<= 1) {
-                        for (int i = 0; i < 10; ++i) tmp[i] = __shfl_down_sync(__activemask(), val[i], iter);
-                        if (interval >= iter) for (int i = 0; i < 10; ++i) val[i] += tmp[i];
-                    }
+                    val = weight;
+                    reduce_and_atomic_add(val, &(buffer[8][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]), mark, interval, bBoundary);
 
-                    if (bBoundary) for (int ii = 0; ii < 10; ++ii)
-                        atomicAdd(&(buffer[ii][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]), val[ii]);
+                    val = 0.01f;
+                    reduce_and_atomic_add(val, &(buffer[9][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]), mark, interval, bBoundary);
 
+                    val = vel[0];
+                    val += (B[0] * xi_minus_xp[0] + B[3] * xi_minus_xp[1] + B[6] * xi_minus_xp[2]);
+                    val *= mass * weight;
+                    reduce_and_atomic_add(val, &(buffer[1][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]), mark, interval, bBoundary);
+
+                    val = vel[1];                  
+                    val += (B[1] * xi_minus_xp[0] + B[4] * xi_minus_xp[1] + B[7] * xi_minus_xp[2]);
+                    val *= mass * weight;
+                    reduce_and_atomic_add(val, &(buffer[2][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]), mark, interval, bBoundary);
+
+                    val = vel[2];
+                    val += (B[2] * xi_minus_xp[0] + B[5] * xi_minus_xp[1] + B[8] * xi_minus_xp[2]);
+                    val *= mass * weight;
+                    reduce_and_atomic_add(val, &(buffer[3][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]), mark, interval, bBoundary);
                 }
             }
         }
@@ -684,7 +694,7 @@ __global__ void P2G_APIC(
 
     for (int ii = 0; ii < 10; ++ii)
         if (buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-            atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+            atomicAdd((T*)((unsigned long long)d_channels[ii] + page_idx * 7680) + (ci * 16 + cj * 4 + ck), buffer[ii][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
 }
 
 
@@ -728,7 +738,7 @@ __global__ void volP2G_APIC(
             *((&buffer[0][0][0][0]) + blockDim.x * i + threadIdx.x) = (T)0;
     
     buffer[1][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] =
-        *((T*)((unsigned long long)d_channels[7] + (int)page_idx * 8192) + (ci * 16 + cj * 4 + ck));
+        *((T*)((unsigned long long)d_channels[7] + (int)page_idx * 7680) + (ci * 16 + cj * 4 + ck));
 
     __syncthreads();
 
@@ -815,7 +825,7 @@ __global__ void volP2G_APIC(
 
     
     if (buffer[0][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-        atomicAdd((T*)((unsigned long long)d_channels[10] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), buffer[0][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+        atomicAdd((T*)((unsigned long long)d_channels[10] + page_idx * 7680) + (ci * 16 + cj * 4 + ck), buffer[0][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
 }
 
 __global__ void preConditionP2G_APIC(
@@ -937,7 +947,7 @@ __global__ void preConditionP2G_APIC(
     int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
 
     if (buffer[bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-        atomicAdd((T*)((unsigned long long)d_channels[11] + page_idx * 8192) + (ci * 16 + cj * 4 + ck), buffer[bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+        atomicAdd((T*)((unsigned long long)d_channels[11] + page_idx * 7680) + (ci * 16 + cj * 4 + ck), buffer[bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
 }
 
 

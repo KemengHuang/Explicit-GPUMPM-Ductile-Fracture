@@ -36,7 +36,7 @@ struct vector3T {
     T z;
 };
 struct CH_STRUCT {
-    unsigned flags;
+    //unsigned flags;
     T ch0;
     T ch1;
     T ch2;

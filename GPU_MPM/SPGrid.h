@@ -31,6 +31,6 @@ public:
 	T* _maxVel;
 	T* innerProductR;
     T** d_channels;
-    unsigned* d_flags;
+    //unsigned* d_flags;
 
 };

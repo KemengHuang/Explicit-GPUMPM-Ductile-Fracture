@@ -71,9 +71,9 @@ __device__ void matrixMatrixMultiplication(const double* a, const double* b, dou
         // vel
         for (int v = 0; v < 3; ++v)
             buffer[v][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] =
-            *((T*)((unsigned long long)d_channels[1 + v] + (int)page_idx * 8192) + (ci * 16 + cj * 4 + ck));
+            *((T*)((unsigned long long)d_channels[1 + v] + (int)page_idx * 7680) + (ci * 16 + cj * 4 + ck));
 		buffer[3][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] =
-			*((T*)((unsigned long long)d_channels[7] + (int)page_idx * 8192) + (ci * 16 + cj * 4 + ck));
+			*((T*)((unsigned long long)d_channels[7] + (int)page_idx * 7680) + (ci * 16 + cj * 4 + ck));
         __syncthreads();
 
         int smallest_node[3];
@@ -240,9 +240,9 @@ __global__ void G2P_APIC(
     // vel
     for (int v = 0; v < 3; ++v)
         buffer[v][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] =
-        *((T*)((unsigned long long)d_channels[1 + v] + (int)page_idx * 8192) + (ci * 16 + cj * 4 + ck));
+        *((T*)((unsigned long long)d_channels[1 + v] + (int)page_idx * 7680) + (ci * 16 + cj * 4 + ck));
     buffer[3][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] =
-        *((T*)((unsigned long long)d_channels[7] + (int)page_idx * 8192) + (ci * 16 + cj * 4 + ck));
+        *((T*)((unsigned long long)d_channels[7] + (int)page_idx * 7680) + (ci * 16 + cj * 4 + ck));
 
     __syncthreads();
 
@@ -292,14 +292,14 @@ __global__ void G2P_APIC(
 
 
 		int c = 0;
-        float tmp[27];
-		for (int i = 0; i < 3; ++i) {
-			for (int j = 0; j < 3; ++j) {
-				for (int k = 0; k < 3; ++k) {
-					tmp[c++] = wOneD[0][i] * wOneD[1][j] * wOneD[2][k];
-				}
-			}
-		}
+  //      float tmp[27];
+		//for (int i = 0; i < 3; ++i) {
+		//	for (int j = 0; j < 3; ++j) {
+		//		for (int k = 0; k < 3; ++k) {
+		//			tmp[c++] = wOneD[0][i] * wOneD[1][j] * wOneD[2][k];
+		//		}
+		//	}
+		//}
 
 
 		c = 0;
@@ -318,10 +318,12 @@ __global__ void G2P_APIC(
                     //    !isinf(wOneD[0][i] * wOneD[1][j] * wOneD[2][k] * buffer[1][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]) &&
                     //    !isinf(wOneD[0][i] * wOneD[1][j] * wOneD[2][k] * buffer[2][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k]))
                     //{
-                        val[0] += tmp[c] * buffer[0][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k];
-                        val[1] += tmp[c] * buffer[1][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k];
-                        val[2] += tmp[c] * buffer[2][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k];
-                        val[3] += tmp[c++] * buffer[3][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k];
+                        T tmp = wOneD[0][i] * wOneD[1][j] * wOneD[2][k];
+                           
+                        val[0] += tmp * buffer[0][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k];
+                        val[1] += tmp * buffer[1][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k];
+                        val[2] += tmp * buffer[2][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k];
+                        val[3] += tmp * buffer[3][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k];
                     //}
                 }
             }
@@ -414,15 +416,16 @@ __global__ void G2P_APIC(
             for (int j = 0; j < 3; ++j) {
                 for (int k = 0; k < 3; ++k) {
                     // B
-                    val[0] += tmp[c] * buffer[0][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (i * dx - xp[0]);
-                    val[1] += tmp[c] * buffer[1][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (i * dx - xp[0]);
-                    val[2] += tmp[c] * buffer[2][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (i * dx - xp[0]);
-                    val[3] += tmp[c] * buffer[0][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (j * dx - xp[1]);
-                    val[4] += tmp[c] * buffer[1][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (j * dx - xp[1]);
-                    val[5] += tmp[c] * buffer[2][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (j * dx - xp[1]);
-                    val[6] += tmp[c] * buffer[0][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (k * dx - xp[2]);
-                    val[7] += tmp[c] * buffer[1][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (k * dx - xp[2]);
-                    val[8] += tmp[c++] * buffer[2][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (k * dx - xp[2]);
+                    T tmp = wOneD[0][i] * wOneD[1][j] * wOneD[2][k];
+                    val[0] += tmp * buffer[0][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (i * dx - xp[0]);
+                    val[1] += tmp * buffer[1][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (i * dx - xp[0]);
+                    val[2] += tmp * buffer[2][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (i * dx - xp[0]);
+                    val[3] += tmp * buffer[0][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (j * dx - xp[1]);
+                    val[4] += tmp * buffer[1][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (j * dx - xp[1]);
+                    val[5] += tmp * buffer[2][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (j * dx - xp[1]);
+                    val[6] += tmp * buffer[0][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (k * dx - xp[2]);
+                    val[7] += tmp * buffer[1][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (k * dx - xp[2]);
+                    val[8] += tmp * buffer[2][smallest_node[0] + i][smallest_node[1] + j][smallest_node[2] + k] * (k * dx - xp[2]);
 
                 }
             }
@@ -474,11 +477,11 @@ __global__ void G2P_APIC(
 //    // vel0
 //    for (int v = 0; v < 3; ++v)
 //        buffer[v][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] =
-//        *((T*)((unsigned long long)d_channels[7 + v] + (int)page_idx * 8192) + (ci * 16 + cj * 4 + ck));
+//        *((T*)((unsigned long long)d_channels[7 + v] + (int)page_idx * 7680) + (ci * 16 + cj * 4 + ck));
 //    // vel
 //    for (int v = 0; v < 3; ++v)
 //        buffer[v + 3][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] =
-//        *((T*)((unsigned long long)d_channels[1 + v] + (int)page_idx * 8192) + (ci * 16 + cj * 4 + ck));
+//        *((T*)((unsigned long long)d_channels[1 + v] + (int)page_idx * 7680) + (ci * 16 + cj * 4 + ck));
 //
 //    __syncthreads();
 //
@@ -620,7 +623,7 @@ __global__ void G2P_APIC_CONFLICT_FREE(
         if (aa < 6 && bb < 6 && cc < 6) {
             int sdid = v * 216 + (aa) * 36 + (bb) * 6 + cc;
             buffer[sdid + CONFLICT_FREE_OFFSET(sdid)] =
-                *((T*)((unsigned long long)d_channels[1 + v] + (int)page_idx * 8192) + (ci * 16 + cj * 4 + ck));
+                *((T*)((unsigned long long)d_channels[1 + v] + (int)page_idx * 7680) + (ci * 16 + cj * 4 + ck));
         }
     }
     __syncthreads();

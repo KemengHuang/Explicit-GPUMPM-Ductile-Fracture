@@ -49,7 +49,7 @@ void SPGrid::SPGrid_MEM_Malloc() {
   
     CUDA_SAFE_CALL(cudaMemcpy(d_channels, hd_channels, sizeof(T*) * 15, cudaMemcpyHostToDevice));
 
-    d_flags = reinterpret_cast<unsigned*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::flags) * elements_per_block));
+    //d_flags = reinterpret_cast<unsigned*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::flags) * elements_per_block));
     
 }
 
