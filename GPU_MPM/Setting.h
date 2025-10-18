@@ -19,7 +19,7 @@ constexpr const unsigned int space_page_num = (N / 4 + 2) * (N / 4 + 2) * (N / 4
 constexpr int Dim = 3;
 constexpr int pretype_threshold = 2500000;
 
-constexpr const T MEMORY_SCALE = 0.4f;
+constexpr const T MEMORY_SCALE = 0.1f;
 // 0: explicit 1: implicit
 #define MPM_SIM_TYPE 0
 
