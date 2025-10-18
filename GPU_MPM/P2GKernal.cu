@@ -563,7 +563,7 @@ __global__ void P2G_APIC(
     int smallest_node[3];
 
     if (relParid < d_block_offsets[pageid + 1] - d_block_offsets[pageid]) {
-        T wOneD[3][3], wgOneD[3][3];
+        float wOneD[3][3], wgOneD[3][3];
 
         smallest_node[0] = smallest_nodes[cellid].x;
         smallest_node[1] = smallest_nodes[cellid].y;
