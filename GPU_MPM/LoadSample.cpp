@@ -1,5 +1,5 @@
 #include"LoadSample.h"
-
+#include<cmath>
 void Sample::LoadSDF(std::string filename, T& pDx, T& minx, T& miny, T& minz, int& ni, int& nj, int& nk)
 {
 	T	m_dx;

@@ -20,7 +20,10 @@ void Particles::initialize(unsigned int numParticle, int tableSize, const T* h_m
     _dmasks = dp_dmasks;
 
     for (int i = 0; i < numParticle; i++) {
-        h_color[i] = (unsigned int((1) * 255) << 24) | (unsigned int((0.5) * 255.0f) << 16) | (unsigned int((0.5) * 255.0f) << 8) | unsigned int((0.0) * 255.0f);
+        h_color[i] = (static_cast<unsigned int>((1) * 255) << 24) |
+            (static_cast<unsigned int>((0.5) * 255.0f) << 16) |
+            (static_cast<unsigned int>((0.5) * 255.0f) << 8) |
+            static_cast<unsigned int>((0.0) * 255.0f);
     }
     CUDA_SAFE_CALL(cudaMemcpy(d_color, h_color, sizeof(unsigned int) * _numParticle, cudaMemcpyHostToDevice));
 

@@ -1,5 +1,5 @@
-#include <GL\glew.h>
-#include <GL\freeglut.h>
+#include <GL/glew.h>
+#include <GL/freeglut.h>
 #include <sstream>
 #include"glmainHead.h"
 #include<fstream>
@@ -160,18 +160,7 @@ void drawParticles(int step) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	int nump_ = simulatorMPM.numParticle;
-	//if (step == 0) {
-	//	glGenBuffers(1, &position_vbo_);
-	//	glGenBuffers(1, &color_vbo_);
-	//	//pos = new mFloat3[nump_];
-	//	//color = new uint[nump_];
-	//	/*for (unsigned int i = 0; i < nump_; ++i)
-	//	{
-	//		uint clo = (uint((1.0) * 255.0f) << 24) | (uint((0.7) * 255.0f) << 16) | (uint((0.55) * 255.0f) << 8) | uint((0.15) * 255.0f);
-	//		color.push_back(clo);
-	//	}*/
-	//}
-	// Point buffers
+
 	glBindBuffer(GL_ARRAY_BUFFER, position_vbo_);
 	glBufferData(GL_ARRAY_BUFFER, nump_ * sizeof(vector3T), &(simulatorMPM.h_pos[0]), GL_DYNAMIC_DRAW);
 	if (sizeof(T) == 4) {

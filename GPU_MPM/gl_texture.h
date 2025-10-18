@@ -10,7 +10,7 @@
 #define _GL_TEXTURE_H
 
 #include <vector>
-#include <GL\glew.h>
+#include <GL/glew.h>
 #include "lodepng.h"
 
 #define IMG_RGB			0

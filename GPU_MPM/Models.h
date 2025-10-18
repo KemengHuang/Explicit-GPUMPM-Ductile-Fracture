@@ -19,10 +19,10 @@ public:
         return _material;
     }
 
-    Model::Model(std::unique_ptr<Model> model) :
+    Model(std::unique_ptr<Model> model) :
         _particle(std::move(model->getParticlesPtr())), _material(std::move(model->getMaterialPtr())) {}
 
-    Model::Model(std::unique_ptr<Particles> particle, std::unique_ptr<Material> material) :
+    Model(std::unique_ptr<Particles> particle, std::unique_ptr<Material> material) :
         _particle(std::move(particle)), _material(std::move(material)) {}
 
 private:

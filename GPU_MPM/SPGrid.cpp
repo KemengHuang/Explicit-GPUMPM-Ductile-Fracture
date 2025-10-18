@@ -32,21 +32,21 @@ void SPGrid::SPGrid_MEM_Malloc() {
     printf("size one struct(%u Bytes) total(%llu Bytes)\n", (unsigned int)sizeof(CH_STRUCT), tmp);
 
     unsigned int elements_per_block = 64;
-    hd_channels[0] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch0) * elements_per_block)); // mass
-    hd_channels[1] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch1) * elements_per_block)); // vel momentum
-    hd_channels[2] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch2) * elements_per_block)); // vel
-    hd_channels[3] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch3) * elements_per_block)); // vel
-    hd_channels[4] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch4) * elements_per_block)); // force
-    hd_channels[5] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch5) * elements_per_block)); // force
-    hd_channels[6] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch6) * elements_per_block)); // force
-    hd_channels[7] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch7) * elements_per_block)); // 
-    hd_channels[8] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch8) * elements_per_block)); // 
-    hd_channels[9] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch9) * elements_per_block)); // 
-    hd_channels[10] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch10) * elements_per_block)); // 
-    hd_channels[11] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch11) * elements_per_block)); // 
-    hd_channels[12] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch12) * elements_per_block)); // 
-    hd_channels[13] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch13) * elements_per_block)); // 
-    hd_channels[14] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch14) * elements_per_block)); // 
+    hd_channels[0] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch0) * elements_per_block)); // mass
+    hd_channels[1] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch1) * elements_per_block)); // vel momentum
+    hd_channels[2] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch2) * elements_per_block)); // vel
+    hd_channels[3] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch3) * elements_per_block)); // vel
+    hd_channels[4] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch4) * elements_per_block)); // force
+    hd_channels[5] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch5) * elements_per_block)); // force
+    hd_channels[6] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch6) * elements_per_block)); // force
+    hd_channels[7] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch7) * elements_per_block)); // 
+    hd_channels[8] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch8) * elements_per_block)); // 
+    hd_channels[9] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch9) * elements_per_block)); // 
+    hd_channels[10] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch10) * elements_per_block)); // 
+    hd_channels[11] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch11) * elements_per_block)); // 
+    hd_channels[12] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch12) * elements_per_block)); // 
+    hd_channels[13] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch13) * elements_per_block)); // 
+    hd_channels[14] = reinterpret_cast<T*>((unsigned long long)d_grid + static_cast<unsigned long long>(OffsetOfMember(&CH_STRUCT::ch14) * elements_per_block)); // 
   
     CUDA_SAFE_CALL(cudaMemcpy(d_channels, hd_channels, sizeof(T*) * 15, cudaMemcpyHostToDevice));
 

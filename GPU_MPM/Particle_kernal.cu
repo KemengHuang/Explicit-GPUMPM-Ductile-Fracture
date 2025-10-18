@@ -281,7 +281,10 @@ __global__ void updateColor(int numParticle, T* _ph, unsigned int* mcolor) {
     if (idx >= numParticle) return;
     T pha = _ph[idx];
 
-    mcolor[idx] = (unsigned int((1) * 255) << 24) | (unsigned int((pha * 0.5f) * 255.0f) << 16) | (unsigned int(((1) * 0.5f) * 255.0f) << 8) | unsigned int(((1 - pha) * 0.5f) * 255.0f);
+    mcolor[idx] = (static_cast<unsigned int>((1) * 255) << 24) |
+        (static_cast<unsigned int>((pha * 0.5f) * 255.0f) << 16) |
+        (static_cast<unsigned int>(((1) * 0.5f) * 255.0f) << 8) |
+        static_cast<unsigned int>(((1 - pha) * 0.5f) * 255.0f);
 
 }
 

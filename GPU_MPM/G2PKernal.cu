@@ -152,7 +152,7 @@ __device__ void matrixMatrixMultiplication(const double* a, const double* b, dou
 			T p_c = d_sorted_C[parid_trans];// = __max(val[3], 0);
 			T new_c = p_c + val[3];
 
-			d_sorted_C_sort[parid] = __max(__min(p_c, new_c), 0);
+            d_sorted_C_sort[parid] = std::max(std::min(p_c, new_c), (T)0);
 
             /*d_tmp[parid] = val[0];
             d_tmp[parid + numParticle] = val[1];
@@ -358,7 +358,7 @@ __global__ void G2P_APIC(
         T p_c = d_sorted_C[parid_trans];// = __max(val[3], 0);
         T new_c = p_c + val[3];
 
-        d_sorted_C_sort[parid] = __max(__min(p_c, new_c), 0);
+        d_sorted_C_sort[parid] = std::max(std::min(p_c, new_c), (T)0);
 
         d_sorted_positions[parid].x += val[0] * dt;
         d_sorted_positions[parid].y += val[1] * dt;
