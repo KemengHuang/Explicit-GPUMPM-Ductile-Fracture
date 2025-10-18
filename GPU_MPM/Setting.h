@@ -9,7 +9,7 @@ using T = float;
 #define MEMOFFSET 3840
 #endif
 
-constexpr const T rateSize = 4;
+constexpr const T rateSize = 2;
 constexpr const unsigned int N = 128 * rateSize;
 constexpr const T dx = 1.0 / N;
 constexpr const T DX = dx;// *rateSize;
