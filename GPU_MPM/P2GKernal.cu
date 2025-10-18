@@ -569,20 +569,20 @@ __global__ void P2G_APIC(
         smallest_node[1] = smallest_nodes[cellid].y;
         smallest_node[2] = smallest_nodes[cellid].z;
 
-        T sig[9];
+        float sig[9];
         int parid_trans = d_indexTrans[parid];
         sig[0] = d_sigma[parid_trans + (0) * numParticle]; sig[1] = d_sigma[parid_trans + (1) * numParticle]; sig[2] = d_sigma[parid_trans + (2) * numParticle];
         sig[3] = d_sigma[parid_trans + (3) * numParticle]; sig[4] = d_sigma[parid_trans + (4) * numParticle]; sig[5] = d_sigma[parid_trans + (5) * numParticle];
         sig[6] = d_sigma[parid_trans + (6) * numParticle]; sig[7] = d_sigma[parid_trans + (7) * numParticle]; sig[8] = d_sigma[parid_trans + (8) * numParticle];
 
-        T B[9];
+        float B[9];
         B[0] = d_B[parid_trans + 0 * numParticle]; B[1] = d_B[parid_trans + 1 * numParticle]; B[2] = d_B[parid_trans + 2 * numParticle];
         B[3] = d_B[parid_trans + 3 * numParticle]; B[4] = d_B[parid_trans + 4 * numParticle]; B[5] = d_B[parid_trans + 5 * numParticle];
         B[6] = d_B[parid_trans + 6 * numParticle]; B[7] = d_B[parid_trans + 7 * numParticle]; B[8] = d_B[parid_trans + 8 * numParticle];
         for (int i = 0; i < 9; ++i)
             B[i] *= D_inverse;
 
-        T xp[3];
+        float xp[3];
         xp[0] = d_sorted_positions[parid].x - smallest_node[0] * dx;
         xp[1] = d_sorted_positions[parid].y - smallest_node[1] * dx;
         xp[2] = d_sorted_positions[parid].z - smallest_node[2] * dx;
@@ -610,7 +610,7 @@ __global__ void P2G_APIC(
         wgOneD[2][1] *= one_over_dx;
         wgOneD[2][2] *= one_over_dx;
 
-        T vel[3];
+        float vel[3];
         vel[0] = d_sorted_velocities[parid_trans].x;
         vel[1] = d_sorted_velocities[parid_trans].y;
         vel[2] = d_sorted_velocities[parid_trans].z;
@@ -623,7 +623,7 @@ __global__ void P2G_APIC(
         T C = d_sorted_C[parid_trans];
 
         T val;
-        T wg[3];
+        float wg[3];
         T xi_minus_xp[3];
         T weight;
         for (int i = 0; i < 3; ++i) {
