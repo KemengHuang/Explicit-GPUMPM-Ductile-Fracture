@@ -97,9 +97,6 @@ target_include_directories(gmpm PRIVATE
 target_compile_definitions(gmpm PRIVATE 
     gmpm_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Assets/"    # Assets directory path
     gmpm_OUTPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Output/"    # Output directory path
-    USE_SNK                   # Enable SNK feature
-    SVD_DOUBLE               # Use double precision for SVD
-    ADAPTIVE_KAPPA           # Enable adaptive kappa
 )
 
 # =============================================================================

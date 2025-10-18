@@ -23,12 +23,12 @@ __global__ void computeContributionFixedCorotated(const int numParticle, const T
     int parid = blockDim.x * blockIdx.x + threadIdx.x;
     if (parid >= numParticle) return;
 
-    double F[9];
+    T F[9];
     F[0] = d_F[parid + 0 * numParticle]; F[1] = d_F[parid + 1 * numParticle]; F[2] = d_F[parid + 2 * numParticle];
     F[3] = d_F[parid + 3 * numParticle]; F[4] = d_F[parid + 4 * numParticle]; F[5] = d_F[parid + 5 * numParticle];
     F[6] = d_F[parid + 6 * numParticle]; F[7] = d_F[parid + 7 * numParticle]; F[8] = d_F[parid + 8 * numParticle];
 
-    double U[9]; double S[3]; double V[9];
+    T U[9]; T S[3]; T V[9];
     __GEIGEN__::math::msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
 
     //
@@ -68,7 +68,7 @@ __device__ T R(const T& alpha, const T& yield_stress, const T& harden) {
 }
 
 
-__device__ void Inverse(double* matIn, double* mat) {
+__device__ void Inverse(T* matIn, T* mat) {
 
     for (int i = 0; i < 9; i++) mat[i] = matIn[i];
 
@@ -76,7 +76,7 @@ __device__ void Inverse(double* matIn, double* mat) {
     int pivot[3] = { 0 };
     for (int i = 0; i < 3; ++i) {
         int pr, pc;
-        double maxValue = 0;
+        T maxValue = 0;
         for (int j = 0; j < 3; ++j) {
             if (pivot[j] != 1) {
                 for (int k = 0; k < 3; ++k) {
@@ -91,7 +91,7 @@ __device__ void Inverse(double* matIn, double* mat) {
             }
         }
         if (pr != pc) {
-            double pv;
+            T pv;
             for (int j = 0; j < 3; ++j) {
                 pv = mat[pr * 3 + j];
                 mat[pr * 3 + j] = mat[pc * 3 + j];
@@ -101,14 +101,14 @@ __device__ void Inverse(double* matIn, double* mat) {
         swapC[i] = pc;
         swapR[i] = pr;
         ++pivot[i];
-        double inv = 1.f / mat[pc * 3 + pc];
+        T inv = 1.0 / mat[pc * 3 + pc];
         mat[pc * 3 + pc] = 1;
         for (int j = 0; j < 3; ++j) {
             mat[pc * 3 + j] *= inv;
         }
         for (int j = 0; j < 3; ++j) {
             if (j != pc) {
-                double powerRatio = mat[j * 3 + pc];
+                T powerRatio = mat[j * 3 + pc];
                 mat[j * 3 + pc] = 0.f;
                 for (int k = 0; k < 3; ++k) {
                     mat[j * 3 + k] -= mat[pc * 3 + k] * powerRatio;
@@ -118,7 +118,7 @@ __device__ void Inverse(double* matIn, double* mat) {
     }
     for (int i = 0; i < 3; ++i) {
         if (swapR[i] != swapC[i]) {
-            double pv;
+            T pv;
             for (int j = 0; j < 3; ++j) {
                 pv = mat[j * 3 + swapC[i]];
                 mat[j * 3 + swapC[i]] = mat[j * 3 + swapR[i]];
@@ -135,15 +135,15 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
     T g = p_g[parid];
     T alpha = p_alpha[parid];
 
-    double F[9];
+    T F[9];
     F[0] = d_F[parid + 0 * numParticle]; F[1] = d_F[parid + 1 * numParticle]; F[2] = d_F[parid + 2 * numParticle];
     F[3] = d_F[parid + 3 * numParticle]; F[4] = d_F[parid + 4 * numParticle]; F[5] = d_F[parid + 5 * numParticle];
     F[6] = d_F[parid + 6 * numParticle]; F[7] = d_F[parid + 7 * numParticle]; F[8] = d_F[parid + 8 * numParticle];
 
-    double U[9]; double S[3]; double V[9];
+    T U[9]; T S[3]; T V[9];
     __GEIGEN__::math::msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
 
-    double C[9];
+    T C[9];
     C[0] = 2 * mu + lambda; C[1] = lambda;          C[2] = lambda;
     C[3] = lambda;          C[4] = 2 * mu + lambda; C[5] = lambda;
     C[6] = lambda;          C[7] = lambda;          C[8] = 2 * mu + lambda;
@@ -191,7 +191,7 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
 
     T y = tau_tr_F - g * R(alpha, yield_stress, harden) * sqrt(parameter1);
 
-    double alpha_c = 1;
+    T alpha_c = 1;
     if (true && y >= (T)1e-12)
     {
         T tau_tr_trace = tau_tr[0] + tau_tr[1] + tau_tr[2];
@@ -250,7 +250,7 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
         tau_nn[1] = tau_dev_nn[1] + parameter2;
         tau_nn[2] = tau_dev_nn[2] + parameter2;
 
-        double D[9];
+        T D[9];
         Inverse(C, D);
 
         T eps_nn[3];
@@ -320,14 +320,14 @@ __global__ void applyVonMises(T* p_g, T* p_alpha, const T lambda, const T mu, T 
     T G_c_0 = 3.f;
     T p = alpha / 2;
     T G_C;
-    double ps = 0.01;
+    T ps = 0.01;
     if (p < ps)
     {
         G_C = G_c_0;
     }
     else
     {
-        double residual_c = 0.1;
+        T residual_c = 0.1;
         G_C = G_c_0 * (((1.f - residual_c) * exp(ps - p)) + residual_c);
     }
 
@@ -373,12 +373,12 @@ __global__ void computeContributionNeoHookean(T dx, T* FP, const int numParticle
     int parid = blockDim.x * blockIdx.x + threadIdx.x;
     if (parid >= numParticle) return;
 
-    double F[9];
+    T F[9];
     F[0] = d_F[parid + 0 * numParticle]; F[1] = d_F[parid + 1 * numParticle]; F[2] = d_F[parid + 2 * numParticle];
     F[3] = d_F[parid + 3 * numParticle]; F[4] = d_F[parid + 4 * numParticle]; F[5] = d_F[parid + 5 * numParticle];
     F[6] = d_F[parid + 6 * numParticle]; F[7] = d_F[parid + 7 * numParticle]; F[8] = d_F[parid + 8 * numParticle];
 
-    double U[9]; double S[3]; double V[9];
+    T U[9]; T S[3]; T V[9];
 
     __GEIGEN__::math::msvd(F[0], F[3], F[6], F[1], F[4], F[7], F[2], F[5], F[8], U[0], U[3], U[6], U[1], U[4], U[7], U[2], U[5], U[8], S[0], S[1], S[2], V[0], V[3], V[6], V[1], V[4], V[7], V[2], V[5], V[8]);
 
