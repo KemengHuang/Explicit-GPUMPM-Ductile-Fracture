@@ -10,11 +10,11 @@ OffsetOfMember(T_FIELD T::* field){
 void SPGrid::SPGrid_MEM_Malloc() {
 
     
-    SPGridMask spgdm(Log2(sizeof(CH_STRUCT)), Log2(sizeof(T)));
+    //SPGridMask spgdm(Log2(sizeof(CH_STRUCT)), Log2(sizeof(T)));
 
     _memoryScale = MEMORY_SCALE;
-    int nodeSize = _width * _height * _depth;
-    unsigned int tmp = sizeof(CH_STRUCT) * nodeSize * _memoryScale;
+    unsigned long long int nodeSize = _width * _height * _depth;
+    unsigned long long int tmp = sizeof(CH_STRUCT) * nodeSize * _memoryScale;
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid, tmp)); // more secured way should be used
    
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_grid_temp, sizeof(T) * nodeSize * _memoryScale));
@@ -28,9 +28,9 @@ void SPGrid::SPGrid_MEM_Malloc() {
 
     CUDA_SAFE_CALL(cudaMalloc((void**)&d_channels, sizeof(T*) * 15));
 
-    printf("size one struct(%d Bytes) total(%d Bytes)\n", (unsigned int)sizeof(CH_STRUCT), tmp);
+    printf("size one struct(%u Bytes) total(%llu Bytes)\n", (unsigned int)sizeof(CH_STRUCT), tmp);
 
-    unsigned int elements_per_block = spgdm.getElement_per_Block();
+    unsigned int elements_per_block = 64;
     hd_channels[0] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch0) * elements_per_block)); // mass
     hd_channels[1] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch1) * elements_per_block)); // vel momentum
     hd_channels[2] = reinterpret_cast<T*>((unsigned long long)d_grid + unsigned long long(OffsetOfMember(&CH_STRUCT::ch2) * elements_per_block)); // vel
@@ -61,7 +61,8 @@ void SPGrid::initialize(unsigned long long* dMasks, unsigned long long* hMasks, 
 
 SPGrid::~SPGrid() {
     CUDA_SAFE_CALL(cudaFree(d_grid));
-    CUDA_SAFE_CALL(cudaFree(d_channels));
+    CUDA_SAFE_CALL(cudaFree(d_channels)); 
+    SPGrid_MEM_Free();
 }
 void SPGrid::SPGrid_MEM_Free() {
     CUDA_SAFE_CALL(cudaFree(d_grid));
@@ -76,6 +77,7 @@ void SPGrid::SPGrid_MEM_Free() {
 	CUDA_SAFE_CALL(cudaFree(_maxVel));
 }
 void SPGrid::clear() {
-    CUDA_SAFE_CALL(cudaMemset(d_grid, 0, sizeof(CH_STRUCT) * _width * _height * _depth * _memoryScale));
+    unsigned long long int totalSize = sizeof(CH_STRUCT) * _width * _height * _depth * _memoryScale;
+    CUDA_SAFE_CALL(cudaMemset(d_grid, 0, totalSize));
 }
 

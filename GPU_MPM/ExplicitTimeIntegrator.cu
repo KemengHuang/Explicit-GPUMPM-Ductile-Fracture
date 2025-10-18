@@ -448,12 +448,12 @@ __global__ void computeContributionNeoHookean(T dx, T* FP, const int numParticle
 //#if TRANSFER_SCHEME != 2
 //    int idx = blockIdx.x;
 //    int cellid = threadIdx.x;
-//    T mass = *((T*)((unsigned long long)d_channels[0] + idx * 7680) + cellid);
+//    T mass = *((T*)((unsigned long long)d_channels[0] + idx * MEMOFFSET) + cellid);
 //    if (mass != 0.f)
 //    {
 //        mass = dt / mass;
 //        for (int i = 0; i < Dim; i++) {
-//            *((T*)((unsigned long long)d_channels[i + 1] + idx * 7680) + cellid) += *((T*)((unsigned long long)d_channels[i + 4] + idx * 7680) + cellid) * mass;
+//            *((T*)((unsigned long long)d_channels[i + 1] + idx * MEMOFFSET) + cellid) += *((T*)((unsigned long long)d_channels[i + 4] + idx * MEMOFFSET) + cellid) * mass;
 //        }
 //    }
 //#endif
@@ -612,10 +612,10 @@ __global__ void transGrid_to_vector_kernal(T** d_channels, T* grid_r, int id) {
     int idx = blockIdx.x;
 
     int cellid = (threadIdx.x);
-    T tr = *((T*)((unsigned long long)d_channels[9] + idx * 7680) + cellid);
+    T tr = *((T*)((unsigned long long)d_channels[9] + idx * MEMOFFSET) + cellid);
     if (tr > 0.f)
     {
-        T a = *((T*)((unsigned long long)d_channels[id] + idx * 7680) + cellid);
+        T a = *((T*)((unsigned long long)d_channels[id] + idx * MEMOFFSET) + cellid);
         grid_r[idx * 64 + cellid] = a;
     }
 }
@@ -623,7 +623,7 @@ __global__ void transGrid_to_vector_kernal(T** d_channels, T* grid_r, int id) {
 __global__ void cal_grid_r_vad_kernal(T** d_channel, T rate, T* in, T* out) {
 	int idx = blockIdx.x;
 	int cellid = (threadIdx.x);
-	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 7680) + cellid);
+	T tr = *((T*)((unsigned long long)d_channel[9] + idx * MEMOFFSET) + cellid);
 	if (tr > 0.f)
 		out[idx * 64 + cellid] = out[idx * 64 + cellid] * rate + in[idx * 64 + cellid];
 
@@ -633,11 +633,11 @@ __global__ void update_grid_phase(T** d_channel, T* x) {
     int idx = blockIdx.x;
 
     int cellid = (threadIdx.x);
-	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 7680) + cellid);
+	T tr = *((T*)((unsigned long long)d_channel[9] + idx * MEMOFFSET) + cellid);
 	if (tr > 0.f)
     {
-        T g_c = *((T*)((unsigned long long)d_channel[7] + idx * 7680) + cellid);
-        *((T*)((unsigned long long)d_channel[7] + idx * 7680) + cellid) = x[idx * 64 + cellid] - g_c;
+        T g_c = *((T*)((unsigned long long)d_channel[7] + idx * MEMOFFSET) + cellid);
+        *((T*)((unsigned long long)d_channel[7] + idx * MEMOFFSET) + cellid) = x[idx * 64 + cellid] - g_c;
     }
 }
 
@@ -645,7 +645,7 @@ __global__ void cal_grid_l_vad_kernal(T** d_channel, T rate, T* in, T* out) {
 	int idx = blockIdx.x;
 
 	int cellid = (threadIdx.x);
-	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 7680) + cellid);
+	T tr = *((T*)((unsigned long long)d_channel[9] + idx * MEMOFFSET) + cellid);
 	if (tr > 0.f)
 		out[idx * 64 + cellid] += in[idx * 64 + cellid] * rate;
 
@@ -655,7 +655,7 @@ __global__ void cal_grid_l_sub2Zero_kernal(T** d_channel, T rate, T* in, T* out)
 	int idx = blockIdx.x;
 
 	int cellid = (threadIdx.x);
-	T tr = *((T*)((unsigned long long)d_channel[9] + idx * 7680) + cellid);
+	T tr = *((T*)((unsigned long long)d_channel[9] + idx * MEMOFFSET) + cellid);
 	if (tr > 0.f) {
 		T a = out[idx * 64 + cellid] - in[idx * 64 + cellid] * rate;
 		out[idx * 64 + cellid] = a;// > 0.f ? a : 0.f;
@@ -674,11 +674,11 @@ __global__ void precondition_subd(T** d_channels, T* grid_r, T* grid_mr) {
     int idx = blockIdx.x;
 
     int cellid = (threadIdx.x);
-    T tag = *((T*)((unsigned long long)d_channels[9] + idx * 7680) + cellid);
+    T tag = *((T*)((unsigned long long)d_channels[9] + idx * MEMOFFSET) + cellid);
     if (tag > 0.f)
     {
-        T mr = *((T*)((unsigned long long)d_channels[11] + idx * 7680) + cellid);
-        *((T*)((unsigned long long)d_channels[11] + idx * 7680) + cellid) = 0.f;
+        T mr = *((T*)((unsigned long long)d_channels[11] + idx * MEMOFFSET) + cellid);
+        *((T*)((unsigned long long)d_channels[11] + idx * MEMOFFSET) + cellid) = 0.f;
 		/*if ((mr < (T)1e-36) && (mr >= 0.f)) {
 			mr = (T)1e-36;
 		}
@@ -895,6 +895,7 @@ void ExplicitTimeIntegrator::integrate(int type, float* simulationTime, float* p
 	cudaEventRecord(end0);
     computeCellIndex(trans, particles);
     computeForceCoefficient(model);
+    CUDA_SAFE_CALL(cudaDeviceSynchronize());
     transferP2G(dt, particles, grid, trans);
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
     undateGrid(dt, grid, trans);
