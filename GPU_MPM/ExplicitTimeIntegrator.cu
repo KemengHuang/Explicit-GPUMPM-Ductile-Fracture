@@ -757,7 +757,7 @@ void transferVolP2G(
 {
 
     const unsigned int blockNum = (unsigned int)trans->_numVirtualPage;
-    const unsigned int threadNum = 512;
+    const unsigned int threadNum = 256;
 
     auto& particlePtr = model.getParticlesPtr();
     auto& materialPtr = model.getMaterialPtr();
@@ -782,7 +782,7 @@ void preCondition_CG(
 {
 
     const unsigned int blockNum = (unsigned int)trans->_numVirtualPage;
-    const unsigned int threadNum = 512;
+    const unsigned int threadNum = 256;
 
     auto& particlePtr = model.getParticlesPtr();
     auto& materialPtr = model.getMaterialPtr();
@@ -814,7 +814,7 @@ void Ax_CG(
 {
 
     const unsigned int blockNum = (unsigned int)trans->_numVirtualPage;
-    const unsigned int threadNum = 512;
+    const unsigned int threadNum = 256;
 
     auto& particlePtr = model.getParticlesPtr();
     auto& materialPtr = model.getMaterialPtr();

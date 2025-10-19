@@ -233,30 +233,21 @@ __global__ void G2P_APIC(
         int bidx = threadIdx.x / 36;
         int bidy = (threadIdx.x % 36) / 6;
         int bidz = threadIdx.x % 6;
+        int ci = bidx % 4;
+        int cj = bidy % 4;
+        int ck = bidz % 4;
 
-
-
-
-        //int block = threadIdx.x & 0x3f;
-        int ci = bidx % 4;//block >> 4;
-        int cj = bidy % 4;//(block & 0xc) >> 2;
-        int ck = bidz % 4;//block & 3;
-
-        //block = threadIdx.x >> 6;
-        int bi = bidx / 4;//block >> 2;
-        int bj = bidy / 4;//(block & 2) >> 1;
-        int bk = bidz / 4;//block & 1;
+        int bi = bidx / 4;
+        int bj = bidy / 4;
+        int bk = bidz / 4;
         int block = (bi << 2) | (bj << 1) | bk;
         int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
 
-        // vel
-        //if (bi * 4 + ci < 6 && bj * 4 + cj < 6 && bk * 4 + ck < 6) {
         for (int v = 0; v < 3; ++v)
             buffer[v][bidx][bidy][bidz] =
             *((T*)((unsigned long long)d_channels[1 + v] + (int)page_idx * MEMOFFSET) + (ci * 16 + cj * 4 + ck));
         buffer[3][bidx][bidy][bidz] =
             *((T*)((unsigned long long)d_channels[7] + (int)page_idx * MEMOFFSET) + (ci * 16 + cj * 4 + ck));
-        //}
     }
     __syncthreads();
 
@@ -1027,26 +1018,34 @@ __global__ void AxG2P_APIC(
     vector3T* d_sorted_col,
     T* d_channels,
     int** d_adjPage) {
-    __shared__ T buffer[8][8][8];
+    __shared__ T buffer[6][6][6];
 
     int pageid = d_targetPages[blockIdx.x] - 1; // from virtual to physical page
     int cellid = d_block_offsets[pageid]; // 
-    int relParid = 512 * (blockIdx.x - d_virtualPageOffsets[pageid]) + threadIdx.x;
+    int relParid = 256 * (blockIdx.x - d_virtualPageOffsets[pageid]) + threadIdx.x;
     int parid = cellid + relParid;
 
-    int block = threadIdx.x & 0x3f;
-    int ci = block >> 4;
-    int cj = (block & 0xc) >> 2;
-    int ck = block & 3;
+    if (threadIdx.x < 216) {
 
-    block = threadIdx.x >> 6;
-    int bi = block >> 2;
-    int bj = (block & 2) >> 1;
-    int bk = block & 1;
+        int bidx = threadIdx.x / 36;
+        int bidy = (threadIdx.x % 36) / 6;
+        int bidz = threadIdx.x % 6;
 
-    int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
+        int ci = bidx % 4;
+        int cj = bidy % 4;
+        int ck = bidz % 4;
 
-    buffer[bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] = d_channels[page_idx * 64 + (ci * 16 + cj * 4 + ck)];
+        int bi = bidx / 4;
+        int bj = bidy / 4;
+        int bk = bidz / 4;
+        int block = (bi << 2) | (bj << 1) | bk;
+        int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
+
+
+        buffer[bidx][bidy][bidz] =
+            d_channels[page_idx * 64 + (ci * 16 + cj * 4 + ck)];
+    }
+
 
     __syncthreads();
 
@@ -1122,5 +1121,3 @@ __global__ void AxG2P_APIC(
         d_sorted_col[parid_trans].z = val[2] * PARA;
     }
 }
-
-

@@ -680,36 +680,19 @@ __global__ void P2G_APIC(
     }
     __syncthreads();
 
-    //int block = threadIdx.x & 0x3f;
-    //int ci = block >> 4;
-    //int cj = (block & 0xc) >> 2;
-    //int ck = block & 3;
-
-    //block = threadIdx.x >> 6;
-    //int bi = block >> 2;
-    //int bj = (block & 2) >> 1;
-    //int bk = block & 1;
     if (threadIdx.x < 216) {
         int bidx = threadIdx.x / 36;
         int bidy = (threadIdx.x % 36) / 6;
         int bidz = threadIdx.x % 6;
 
+        int ci = bidx % 4;
+        int cj = bidy % 4;
+        int ck = bidz % 4;
 
-
-
-        //int block = threadIdx.x & 0x3f;
-        int ci = bidx % 4;//block >> 4;
-        int cj = bidy % 4;//(block & 0xc) >> 2;
-        int ck = bidz % 4;//block & 3;
-
-        //block = threadIdx.x >> 6;
-        int bi = bidx / 4;//block >> 2;
-        int bj = bidy / 4;//(block & 2) >> 1;
-        int bk = bidz / 4;//block & 1;
+        int bi = bidx / 4;
+        int bj = bidy / 4;
+        int bk = bidz / 4;
         int block = (bi << 2) | (bj << 1) | bk;
-        //int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
-
-
         int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
 
         for (int ii = 0; ii < 10; ++ii)
@@ -928,36 +911,40 @@ __global__ void volP2G_APIC(
     T dt,
     T parabolic_M)
 {
-    __shared__ T buffer[2][8][8][8];
+    __shared__ T buffer[2][6][6][6];
 
 
     int pageid = d_targetPages[blockIdx.x] - 1;
 
-    int block = threadIdx.x & 0x3f;
-    int ci = block >> 4;
-    int cj = (block & 0xc) >> 2;
-    int ck = block & 3;
-
-    block = threadIdx.x >> 6;
-    int bi = block >> 2;
-    int bj = (block & 2) >> 1;
-    int bk = block & 1;
-
-    int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
-
-    int cellid = (8 * 8 * 8 + blockDim.x - 1) / blockDim.x;
+    int cellid = (6 * 6 * 6 + blockDim.x - 1) / blockDim.x;
     for (int i = 0; i < cellid; ++i)
-        if (blockDim.x * i + threadIdx.x < 8 * 8 * 8)
+        if (blockDim.x * i + threadIdx.x < 6 * 6 * 6)
             *((&buffer[0][0][0][0]) + blockDim.x * i + threadIdx.x) = (T)0;
 
-    buffer[1][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] =
-        *((T*)((unsigned long long)d_channels[7] + (int)page_idx * MEMOFFSET) + (ci * 16 + cj * 4 + ck));
+    int bidx = threadIdx.x / 36;
+    int bidy = (threadIdx.x % 36) / 6;
+    int bidz = threadIdx.x % 6;
+
+    int ci = bidx % 4;
+    int cj = bidy % 4;
+    int ck = bidz % 4;
+
+    int bi = bidx / 4;
+    int bj = bidy / 4;
+    int bk = bidz / 4;
+    int block = (bi << 2) | (bj << 1) | bk;
+
+    if (threadIdx.x < 216) {
+        int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
+        buffer[1][bidx][bidy][bidz] =
+            *((T*)((unsigned long long)d_channels[7] + (int)page_idx * MEMOFFSET) + (ci * 16 + cj * 4 + ck));
+    }
 
     __syncthreads();
 
 
     cellid = d_block_offsets[pageid];
-    int relParid = 512 * (blockIdx.x - d_virtualPageOffsets[pageid]) + threadIdx.x;
+    int relParid = 256 * (blockIdx.x - d_virtualPageOffsets[pageid]) + threadIdx.x;
     int parid = cellid + relParid;
 
     int laneid = threadIdx.x & 0x1f;
@@ -1035,10 +1022,11 @@ __global__ void volP2G_APIC(
         }
     }
     __syncthreads();
-
-
-    if (buffer[0][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-        atomicAdd((T*)((unsigned long long)d_channels[10] + page_idx * MEMOFFSET) + (ci * 16 + cj * 4 + ck), buffer[0][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+    if (threadIdx.x < 216) {
+        int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
+        if (buffer[0][bidx][bidy][bidz] != 0)
+            atomicAdd((T*)((unsigned long long)d_channels[10] + page_idx * MEMOFFSET) + (ci * 16 + cj * 4 + ck), buffer[0][bidx][bidy][bidz]);
+    }
 }
 
 __global__ void preConditionP2G_APIC(
@@ -1059,11 +1047,11 @@ __global__ void preConditionP2G_APIC(
     T dt,
     T parabolic_M)
 {
-    __shared__ T buffer[8][8][8];
+    __shared__ T buffer[6][6][6];
 
-    int cellid = (8 * 8 * 8 + blockDim.x - 1) / blockDim.x;
+    int cellid = (6 * 6 * 6 + blockDim.x - 1) / blockDim.x;
     for (int i = 0; i < cellid; ++i)
-        if (blockDim.x * i + threadIdx.x < 8 * 8 * 8)
+        if (blockDim.x * i + threadIdx.x < 6 * 6 * 6)
             *((&buffer[0][0][0]) + blockDim.x * i + threadIdx.x) = (T)0;
 
     __syncthreads();
@@ -1071,7 +1059,7 @@ __global__ void preConditionP2G_APIC(
     int pageid = d_targetPages[blockIdx.x] - 1;
 
     cellid = d_block_offsets[pageid];
-    int relParid = 512 * (blockIdx.x - d_virtualPageOffsets[pageid]) + threadIdx.x;
+    int relParid = 256 * (blockIdx.x - d_virtualPageOffsets[pageid]) + threadIdx.x;
     int parid = cellid + relParid;
 
     int laneid = threadIdx.x & 0x1f;
@@ -1147,20 +1135,25 @@ __global__ void preConditionP2G_APIC(
     __syncthreads();
 
 
-    int block = threadIdx.x & 0x3f;
-    int ci = block >> 4;
-    int cj = (block & 0xc) >> 2;
-    int ck = block & 3;
+    if (threadIdx.x < 216) {
+        int bidx = threadIdx.x / 36;
+        int bidy = (threadIdx.x % 36) / 6;
+        int bidz = threadIdx.x % 6;
 
-    block = threadIdx.x >> 6;
-    int bi = block >> 2;
-    int bj = (block & 2) >> 1;
-    int bk = block & 1;
+        int ci = bidx % 4;
+        int cj = bidy % 4;
+        int ck = bidz % 4;
 
-    int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
+        int bi = bidx / 4;
+        int bj = bidy / 4;
+        int bk = bidz / 4;
+        int block = (bi << 2) | (bj << 1) | bk;
+        int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
 
-    if (buffer[bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-        atomicAdd((T*)((unsigned long long)d_channels[11] + page_idx * MEMOFFSET) + (ci * 16 + cj * 4 + ck), buffer[bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+
+        if (buffer[bidx][bidy][bidz] != 0)
+            atomicAdd((T*)((unsigned long long)d_channels[11] + page_idx * MEMOFFSET) + (ci * 16 + cj * 4 + ck), buffer[bidx][bidy][bidz]);
+    }
 }
 
 
@@ -1185,35 +1178,38 @@ __global__ void AxP2G_APIC(
     T dt,
     T parabolic_M)
 {
-    __shared__ T buffer[2][8][8][8];
-    int cellid = (8 * 8 * 8 + blockDim.x - 1) / blockDim.x;
+    __shared__ T buffer[2][6][6][6];
+    int cellid = (6 * 6 * 6 + blockDim.x - 1) / blockDim.x;
     for (int i = 0; i < cellid; ++i)
-        if (blockDim.x * i + threadIdx.x < 8 * 8 * 8)
+        if (blockDim.x * i + threadIdx.x < 6 * 6 * 6)
             *((&buffer[0][0][0][0]) + blockDim.x * i + threadIdx.x) = (T)0;
-
-
 
     int pageid = d_targetPages[blockIdx.x] - 1;
 
-    int block = threadIdx.x & 0x3f;
-    int ci = block >> 4;
-    int cj = (block & 0xc) >> 2;
-    int ck = block & 3;
 
-    block = threadIdx.x >> 6;
-    int bi = block >> 2;
-    int bj = (block & 2) >> 1;
-    int bk = block & 1;
+    int bidx = threadIdx.x / 36;
+    int bidy = (threadIdx.x % 36) / 6;
+    int bidz = threadIdx.x % 6;
 
-    int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
+    int ci = bidx % 4;
+    int cj = bidy % 4;
+    int ck = bidz % 4;
 
-    buffer[1][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] = d_channels[page_idx * 64 + (ci * 16 + cj * 4 + ck)];
+    int bi = bidx / 4;
+    int bj = bidy / 4;
+    int bk = bidz / 4;
+    int block = (bi << 2) | (bj << 1) | bk;
 
+    if (threadIdx.x < 216) {
+        int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
+        buffer[1][bidx][bidy][bidz] =
+            d_channels[page_idx * 64 + (ci * 16 + cj * 4 + ck)];
+    }
     __syncthreads();
 
 
     cellid = d_block_offsets[pageid];
-    int relParid = 512 * (blockIdx.x - d_virtualPageOffsets[pageid]) + threadIdx.x;
+    int relParid = 256 * (blockIdx.x - d_virtualPageOffsets[pageid]) + threadIdx.x;
     int parid = cellid + relParid;
 
     int laneid = threadIdx.x & 0x1f;
@@ -1321,8 +1317,11 @@ __global__ void AxP2G_APIC(
     }
     __syncthreads();
 
+    if (threadIdx.x < 216) {
 
-    if (buffer[0][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck] != 0)
-        atomicAdd(&d_ax[page_idx * 64 + (ci * 16 + cj * 4 + ck)], buffer[0][bi * 4 + ci][bj * 4 + cj][bk * 4 + ck]);
+        int page_idx = block ? d_adjPage[block - 1][pageid] : pageid;
+        if (buffer[0][bidx][bidy][bidz] != 0)
+            atomicAdd(&d_ax[page_idx * 64 + (ci * 16 + cj * 4 + ck)], buffer[0][bidx][bidy][bidz]);
+    }
 }
 
