@@ -116,7 +116,7 @@ __global__ void establishPageTopology(const int numPage, const int tableSize, co
 __global__ void markPageSize(const int numPage, const int* _offsets, int* _marks) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= numPage) return;
-    _marks[idx] = (_offsets[idx + 1] - _offsets[idx] + 511) / 512;
+    _marks[idx] = (_offsets[idx + 1] - _offsets[idx] + 255) / 256;
 }
 
 __global__ void markVirtualPageOffset(const int numPage, const int* _toVirtualOffsets, int* _marks) {

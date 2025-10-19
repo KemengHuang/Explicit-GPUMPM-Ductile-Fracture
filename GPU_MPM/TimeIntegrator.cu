@@ -304,7 +304,7 @@ void MPMTimeIntegrator::transferP2G(
 {
     grid->clear();
     const unsigned int blockNum = (unsigned int)trans->_numVirtualPage;
-    const unsigned int threadNum = 512;
+    const unsigned int threadNum = 256;
 
     //#if TRANSFER_SCHEME == 0
     //    P2G_FLIP << <blockNum, threadNum >> > (geometry->_numParticle, (const int*)trans->d_targetPage, (const int*)trans->d_virtualPageOffset,
@@ -412,7 +412,7 @@ void MPMTimeIntegrator::transferG2P(const T dt, std::unique_ptr<Particles>& geom
     std::unique_ptr<DomainTransformer>& trans)
 {
     const unsigned int blockNum = (unsigned int)trans->_numVirtualPage;
-    const unsigned int threadNum = 512;
+    const unsigned int threadNum = 256;
 
     //#if TRANSFER_SCHEME == 0
     //    /*vector3T* vel;
