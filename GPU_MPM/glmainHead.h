@@ -6,8 +6,8 @@
 #define VTYPE		float
 
 
-float window_width = 900;
-float window_height = 600;
+float window_width = 1080;
+float window_height = 1080;
 
 float xRot = 0.0f;
 float yRot = 90.f;

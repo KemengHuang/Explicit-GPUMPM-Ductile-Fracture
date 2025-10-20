@@ -131,28 +131,6 @@ bool MPMSimulator::build(unsigned int buildtype) {
         int sizeOfOneCopy = h_pos.size();
         T stride = (N - center[0] * 2) * 0.3333 * dx;
 
-        for (int i = 0, j = 0; j < 0; ++j){
-            if (i == 0 && j == 0) continue;
-            T theta = (T)(10. / 180.) * 3.1415926f;
-            T rotation[9] = {
-                std::cos(theta),-std::sin(theta),0,
-                std::sin(theta),std::cos(theta),0,
-                0,0,1
-            };
-
-            for (int p = 0; p < sizeOfOneCopy; ++p){
-                vector3T pos = h_pos[p];
-                // move pos to center 
-                T diff[3];
-                diff[0] = pos.x - center[0] * dx;
-                diff[1] = pos.y - center[1] * dx;
-                diff[2] = pos.z - center[2] * dx;
-                matrixVectorMultiplication(rotation, diff, &pos);
-                pos.x = pos.x + center[0] * dx;
-                pos.y = pos.y + center[1] * dx;
-                pos.z = pos.z + center[2] * dx;
-            }
-        }
 
         totalVolume = res[0] * res[1] * res[2] * dx * dx * dx;
 
@@ -166,18 +144,18 @@ bool MPMSimulator::build(unsigned int buildtype) {
         }
         int numPartvector3T = 0;
         for (int i = 0; i < numParticle; i++){
-            if (h_pos[i].z > 0.5f) {
+            if (h_pos[i].z > center[2] * dx) {
                 numPartvector3T++;
             }
         }
               
-        std::cout << "The Number of vector3Ts for the first part" << numPartvector3T << std::endl;
-        
+        std::cout << "The Number of vector3Ts for the first part:  " << numPartvector3T << std::endl;
+        std::cout << "center z:  " << center[2] * dx << std::endl;
         std::vector<vector3T> tmp = h_pos;
         int cubeIndex = 0;
         int baseIndex = numPartvector3T;
         for (int i = 0; i < numParticle; i++) {
-            if (tmp[i].z > 0.5) {
+            if (tmp[i].z > center[2] * dx) {
                 h_pos[cubeIndex] = tmp[i];
                 h_vel[cubeIndex++].z = -1.5;
             }

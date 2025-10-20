@@ -149,7 +149,7 @@ void drawParticles(int step) {
 	float quadratic[] = { 1.0f, 0.01f, 0.001f };
 	glEnable(GL_POINT_DISTANCE_ATTENUATION);
 	glPointParameterfvARB(GL_POINT_DISTANCE_ATTENUATION, quadratic);
-	glPointSize(3);
+	glPointSize(6);
 	glPointParameterfARB(GL_POINT_SIZE_MAX, 32);
 	glPointParameterfARB(GL_POINT_SIZE_MIN, 1.0f);
 
